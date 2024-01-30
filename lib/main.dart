@@ -1,16 +1,50 @@
-import 'package:booness/models/diaryentry.dart';
 import 'package:booness/pages/open_dairy.dart';
+import 'package:booness/pages/signin.dart';
+import 'package:booness/pages/splashScreen.dart';
+import 'package:booness/services/auth_services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'services/realtime_database.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+      options: const FirebaseOptions(
+          // these are variable
+          // for each firebase project
+          apiKey: "AIzaSyAjlMBnRl09ld30ny6smrFhI6k-aVa81qM",
+          authDomain: "dailygoodness-ad11f.firebaseapp.com",
+          projectId: "dailygoodness-ad11f",
+          databaseURL:
+              "https://dailygoodness-ad11f-default-rtdb.asia-southeast1.firebasedatabase.app/",
+          storageBucket: "dailygoodness-ad11f.appspot.com",
+          messagingSenderId: "61474647326",
+          appId: "1:61474647326:web:4629082b50efd3b7102d0f",
+          measurementId: "G-P5Q8Y9CKTQ"));
+  runApp(MaterialApp(
+      home: user != null
+          ? HomeScreen(
+              title: '',
+            )
+          : const GoogleSignIn()));
 }
 
-class MyApp extends StatelessWidget {
+User? user = FirebaseAuth.instance.currentUser;
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -42,13 +76,13 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Do not forget your days'),
+      home: HomeScreen(title: 'Daily Goodness'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key, required this.title});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -62,24 +96,11 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
+class _HomeScreenState extends State<HomeScreen> {
   get builder => null;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,28 +136,28 @@ class _MyHomePageState extends State<MyHomePage> {
       )),
 
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
+        leading: CircleAvatar(
+          backgroundImage: NetworkImage('${user!.photoURL}', scale: 0.5),
+        ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
+        // Here we take the value from the HomeScreen object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: ListView.builder(
-        itemCount: diaryEntries.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(diaryEntries[index].title),
-            subtitle: Text(diaryEntries[index].entry),
-            trailing:
-                Text(DateFormat('yyyy-MM-dd').format(diaryEntries[index].date)),
+      body: FirebaseAnimatedList(
+        query: ref,
+        itemBuilder: (context, snapshot, animation, index) {
+          return Card(
+            child: ListTile(
+                title: Text(snapshot.child('title').value.toString()),
+                subtitle: Text(snapshot.child('entry').value.toString()),
+                trailing: Text(snapshot.child('date').value.toString())),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          print(diaryEntries[0].title);
+          signOut(context);
         },
         tooltip: 'Increment',
         child: const Icon(Icons.add_rounded),

@@ -1,11 +1,14 @@
 import 'package:booness/models/diaryentry.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 DateTime now = DateTime.now();
 DateTime date = DateTime(now.year, now.month, now.day);
-List<DiaryEntry> diaryEntries = [];
-var userSelectedDate;
+List<DiaryEntry> diaryEntries = []; // List of diary entries
+var userSelectedDate; // User selected date in the Bottom sheet
+final database =
+    FirebaseDatabase.instance.ref('Post'); // Create a database reference
 
 TextEditingController titleController = TextEditingController();
 TextEditingController entryController = TextEditingController();
@@ -75,6 +78,7 @@ Future OpenDairy(context) {
 
                           // Paragraph writing
                           TextField(
+                            controller: entryController,
                             keyboardType: TextInputType.multiline,
                             maxLines: null, // Allow unlimited lines
                             decoration: const InputDecoration(
@@ -107,25 +111,40 @@ Future OpenDairy(context) {
                                 child: Row(
                                   children: [
                                     Text(userSelectedDate != null
-                                        ? DateFormat('yyyy-MM-dd')
+                                        ? DateFormat('dd-MM-yyyy')
                                             .format(userSelectedDate)
                                         // Replace colon with comma and add DateTime.now()
-                                        : ''),
+                                        : DateFormat('dd-MM-yyyy')
+                                            .format(date)),
                                   ],
                                 ),
                               ),
                               IconButton(
+                                icon: const Icon(Icons.check),
                                 color: Colors.green,
                                 onPressed: () {
-                                  DiaryEntry newEntry = DiaryEntry(
-                                    title: titleController.text,
-                                    entry: entryController.text,
-                                    date: DateTime.now(),
-                                  );
-                                  diaryEntries.add(newEntry);
+                                  database
+                                      .child(DateTime.now()
+                                          .millisecondsSinceEpoch
+                                          .toString())
+                                      .set({
+                                    'title': titleController.text,
+                                    'entry': entryController.text,
+                                    'date': userSelectedDate.toString(),
+                                  });
+                                  // setState(() {
+                                  //   DiaryEntry newEntry = DiaryEntry(
+                                  //     title: titleController.text,
+                                  //     entry: entryController.text,
+                                  //     date: date,
+                                  //   );
+                                  //   diaryEntries.add(newEntry);
                                   Navigator.pop(context);
-                                }, // Implement upload functionality
-                                icon: const Icon(Icons.check),
+                                  titleController.clear();
+                                  entryController.clear();
+
+                                  // Implement upload functionality
+                                },
                               ),
                             ],
                           ),

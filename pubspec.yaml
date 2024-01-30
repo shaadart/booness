@@ -29,11 +29,20 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
 
+  firebase_core:
+  google_sign_in: ^6.2.1
+  firebase_auth:
+  firebase_auth_web:
+  staggered_grid_view_flutter: ^0.0.4
+  intl: 
+  google_fonts: ^6.1.0
+  cloud_firestore: 
+  firebase_database:
+  shared_preferences:
   flutter:
     sdk: flutter
 
-  intl: 
-  google_fonts: ^6.1.0
+ 
 
 
   # The following adds the Cupertino Icons font to your application.
