@@ -2,6 +2,7 @@ import 'package:booness/main.dart';
 import 'package:booness/pages/signin.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   handleAuth() {
@@ -13,7 +14,7 @@ class AuthService {
         if (snapshot.hasData) {
           return const MyApp();
         } else {
-          return const GoogleSignIn();
+          return const LoginScreen();
         }
       },
     );
@@ -26,7 +27,8 @@ void signOut(context) async {
   Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GoogleSignIn(),
+        builder: (context) => LoginScreen(),
       ));
-  await firebaseAuth.signOut();
+  await firebaseAuth.signOut(); //firebase signout. 
+  await GoogleSignIn().signOut(); //sign out with google 
 }

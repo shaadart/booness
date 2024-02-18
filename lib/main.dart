@@ -1,41 +1,51 @@
-import 'package:booness/pages/open_dairy.dart';
+import 'package:booness/firebase_options.dart';
+import 'package:booness/models/userData.dart';
 import 'package:booness/pages/signin.dart';
 import 'package:booness/pages/splashScreen.dart';
 import 'package:booness/services/auth_services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:page_transition/page_transition.dart';
 
+import 'pages/DairyUi.dart';
+import 'pages/writeDiary.dart';
 import 'services/realtime_database.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-      options: const FirebaseOptions(
-          // these are variable
-          // for each firebase project
-          apiKey: "AIzaSyAjlMBnRl09ld30ny6smrFhI6k-aVa81qM",
-          authDomain: "dailygoodness-ad11f.firebaseapp.com",
-          projectId: "dailygoodness-ad11f",
-          databaseURL:
-              "https://dailygoodness-ad11f-default-rtdb.asia-southeast1.firebasedatabase.app/",
-          storageBucket: "dailygoodness-ad11f.appspot.com",
-          messagingSenderId: "61474647326",
-          appId: "1:61474647326:web:4629082b50efd3b7102d0f",
-          measurementId: "G-P5Q8Y9CKTQ"));
+    options: DefaultFirebaseOptions.currentPlatform,
+    // options: const FirebaseOptions(
+    //     // these are variable
+    //     // for each firebase project
+    //     apiKey: "AIzaSyAjlMBnRl09ld30ny6smrFhI6k-aVa81qM",
+    //     authDomain: "dailygoodness-ad11f.firebaseapp.com",
+    //     projectId: "dailygoodness-ad11f",
+    //     databaseURL:
+    //         "https://dailygoodness-ad11f-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    //     storageBucket: "dailygoodness-ad11f.appspot.com",
+    //     messagingSenderId: "61474647326",
+    //     appId: "1:61474647326:web:4629082b50efd3b7102d0f",
+    //     measurementId: "G-P5Q8Y9CKTQ"));
+  );
+
   runApp(MaterialApp(
-      home: user != null
+      // home: MyApp()
+      home: currentUser != null
           ? HomeScreen(
               title: '',
             )
-          : const GoogleSignIn()));
+          : const LoginScreen()));
 }
 
-User? user = FirebaseAuth.instance.currentUser;
+final currentUser = FirebaseAuth.instance.currentUser;
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -51,26 +61,8 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        textTheme: GoogleFonts.workSansTextTheme(
-          Theme.of(context).textTheme,
-        ),
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0000ff),
+          seedColor: Color.fromARGB(255, 241, 96, 0),
           // primary: Color(0xff103783),
           // secondary: Color(0xff9bafd9)
         ),
@@ -111,56 +103,77 @@ class _HomeScreenState extends State<HomeScreen> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      bottomNavigationBar: BottomAppBar(
-          //color: Colors.white,
-          child: Row(
-        children: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {},
+      appBar: AppBar(
+        leading: Padding(
+          padding:
+              EdgeInsets.only(left: MediaQuery.of(context).size.width * 0.05),
+          child: CircleAvatar(
+            backgroundImage: NetworkImage(
+              photoUrl!,
+            ),
+            // Your CircleAvatar properties here
           ),
-          IconButton(
-              onPressed: () {
-                OpenDairy(context);
-              },
-              icon: const Icon(Icons.add)),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.web_stories_outlined),
-            onPressed: () {},
+        ),
+
+        // backgroundImage: NetworkImage(
+        //     "https://i.pinimg.com/564x/3e/50/5d/3e505dcb08e5391247a279be59a5bdcf.jpg"),
+
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(
+                right: MediaQuery.of(context).size.width * 0.05),
+            child: IconButton(
+                onPressed: () {
+                  signOut(context);
+                },
+                icon: const Icon(PhosphorIcons.magnifying_glass)),
           ),
         ],
-      )),
-
-      appBar: AppBar(
-        leading: CircleAvatar(
-          backgroundImage: NetworkImage('${user!.photoURL}', scale: 0.5),
+        title: Text(
+          "Booness",
+          style: GoogleFonts.cedarvilleCursive(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the HomeScreen object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        centerTitle: true,
       ),
-      body: FirebaseAnimatedList(
-        query: ref,
-        itemBuilder: (context, snapshot, animation, index) {
-          return Card(
-            child: ListTile(
-                title: Text(snapshot.child('title').value.toString()),
-                subtitle: Text(snapshot.child('entry').value.toString()),
-                trailing: Text(snapshot.child('date').value.toString())),
-          );
-        },
-      ),
+      body: SingleChildScrollView(child: const DiaryUI()),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          signOut(context);
+          // signOut(context);
+          void readData() {
+            ref.onValue.listen((event) {
+              DataSnapshot dataSnapshot = event.snapshot;
+              Object? values = dataSnapshot.value;
+              (values as Map<dynamic, dynamic>).forEach((key, values) {
+                // Import the necessary library
+
+                // ...
+
+                print(dataSnapshot
+                    .value); // Access the "title" key from the JSON data
+
+                print('title: ${values['title']}');
+                print('entry: ${values['entry']}');
+                print('date: ${values['date']}');
+                print("this is the ${currentUser!.providerData[0].uid}");
+              });
+            });
+          }
+
+          readData();
+
+          Navigator.push(
+              context,
+              PageTransition(
+                curve: Curves.fastEaseInToSlowEaseOut,
+                duration: const Duration(milliseconds: 200),
+                type: PageTransitionType.bottomToTop,
+                child: const WriteDiary(),
+              ));
         },
         tooltip: 'Increment',
-        child: const Icon(Icons.add_rounded),
+        child: const Icon(PhosphorIcons.plus),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }

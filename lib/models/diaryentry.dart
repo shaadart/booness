@@ -1,9 +1,9 @@
-
-
 class DiaryEntry {
   final String title;
   final String entry;
   final DateTime date;
+  final List image;
 
-  DiaryEntry({ required this.title, required this.entry, required this.date});
+  DiaryEntry(this.image, {required this.title, required this.entry, required this.date});
 }
+

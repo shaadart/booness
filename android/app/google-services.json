@@ -1,0 +1,91 @@
+{
+  "project_info": {
+    "project_number": "61474647326",
+    "firebase_url": "https://dailygoodness-ad11f-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "dailygoodness-ad11f",
+    "storage_bucket": "dailygoodness-ad11f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:61474647326:android:5735f0c0a298ae3f102d0f",
+        "android_client_info": {
+          "package_name": "com.booness.com"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "61474647326-tgcn1cfre5b34s1btiq4grbiolgt2bjj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiGZh5XtzqM1aKhXK54_TKvdcXsQffq78"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "61474647326-tgcn1cfre5b34s1btiq4grbiolgt2bjj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "61474647326-52lnjlfe9a47q605bthtsea4sj2u6il1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.booness"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:61474647326:android:93ada924fcf7cbe4102d0f",
+        "android_client_info": {
+          "package_name": "com.example.booness"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "61474647326-2abu45a3bair7poajfqlo7virb4d5cje.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.booness",
+            "certificate_hash": "670e0817d474436cfc11d8e1160c51c2653c616d"
+          }
+        },
+        {
+          "client_id": "61474647326-tgcn1cfre5b34s1btiq4grbiolgt2bjj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiGZh5XtzqM1aKhXK54_TKvdcXsQffq78"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "61474647326-tgcn1cfre5b34s1btiq4grbiolgt2bjj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "61474647326-52lnjlfe9a47q605bthtsea4sj2u6il1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.booness"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
