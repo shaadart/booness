@@ -2,8 +2,12 @@ class DiaryEntry {
   final String title;
   final String entry;
   final DateTime date;
-  final List image;
+  final String id; // Add a unique ID field
 
-  DiaryEntry(this.image, {required this.title, required this.entry, required this.date});
+  DiaryEntry({
+    required this.title,
+    required this.entry,
+    required this.date,
+    required this.id,
+  });
 }
-

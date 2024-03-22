@@ -25,6 +25,7 @@ class _Authentication_ScreenState extends State<Authentication_Screen> {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Authentication Screen',
       home: LoginScreen(),
     );

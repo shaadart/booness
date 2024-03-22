@@ -37,6 +37,7 @@ dependencies:
   firebase_auth: null
   firebase_core: null
   firebase_database: null
+  app_bar_with_search_switch: ^1.7.0
   flutter:
     sdk: flutter
   flutter_cache_manager: ^3.3.1
@@ -46,6 +47,8 @@ dependencies:
   google_sign_in: ^5.4.4
   image: ^4.1.7
   intl: null
+  adaptive_theme: ^3.6.0
+  animate_do:
   page_transition: ^2.1.0
   path_provider: ^2.1.2
 

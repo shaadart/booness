@@ -1,52 +1,58 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:booness/services/realtime_database.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/foundation.dart';
+import 'package:booness/pages/EditDiary.dart';
+import 'package:booness/pages/writeDiary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:page_transition/page_transition.dart';
 
 import '../main.dart';
-import '../models/diaryentry.dart';
 import '../services/imageservices.dart';
+import '../services/realtime_database.dart';
 
-DateTime now = DateTime.now();
-DateTime date = DateTime(now.year, now.month, now.day);
-List<DiaryEntry> diaryEntries = []; // List of diary entries
-var userSelectedDate = DateTime.now(); // User selected date in the Bottom sheet
-// Create a database reference
-
-TextEditingController titleController = TextEditingController();
-
-QuillController quillController = QuillController.basic();
-
-class WriteDiary extends StatefulWidget {
-  final DiaryEntry? entry;
-  const WriteDiary({super.key, this.entry});
+class EditDiary extends StatefulWidget {
+  final String title;
+  final String entry;
+  final String date;
+  final String id;
+  const EditDiary(
+      {super.key,
+      required this.title,
+      required this.entry,
+      required this.date,
+      required this.id});
 
   @override
-  State<WriteDiary> createState() => _WriteDiaryState();
+  State<EditDiary> createState() => _EditDiaryState();
 }
 
-class _WriteDiaryState extends State<WriteDiary> {
+class _EditDiaryState extends State<EditDiary> {
+  String widgetId = "";
   @override
   void initState() {
     super.initState();
-    // if (widget.entry != null) {
-    //   // Pre-populate the fields with existing entry data
-    //   titleController.text = widget.entry!.title;
-    //   quillController.document =
-    //       Document.fromJson(jsonDecode(widget.entry!.entry));
-    //   userSelectedDate = widget.entry!.date;
-    // }
+    userSelectedDate = DateTime.parse(widget.date);
+    titleController.text = widget.title;
+    widgetId = widget.id;
+    print('widget.id: ${widget.id}');
+    print('widgetId: ${widgetId}');
+
+    try {
+      // Attempt to trim potential whitespace
+      final trimmedJson = widget.entry.trim().replaceAll('\u00A0', ' ');
+      final decodedData = jsonDecode(trimmedJson);
+      final doc = Document.fromJson(decodedData);
+      quillController = QuillController(
+        document: doc,
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    } catch (error) {
+      print('Error decoding JSON: $error');
+      // Add error handling, potentially show a message or use a default entry
+    }
   }
 
   Widget build(BuildContext context) {
@@ -60,13 +66,19 @@ class _WriteDiaryState extends State<WriteDiary> {
                 context,
                 PageTransition(
                   curve: Curves.fastEaseInToSlowEaseOut,
-                  duration: Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 300),
                   type: PageTransitionType.topToBottom,
-                  child: HomeScreen(
+                  child: const HomeScreen(
                     title: '',
                   ),
                 ),
               );
+
+              setState(() {
+                userSelectedDate = DateTime.now();
+              });
+              titleController.clear();
+              quillController.clear();
             },
           ),
           actions: [
@@ -76,25 +88,19 @@ class _WriteDiaryState extends State<WriteDiary> {
               onPressed: () {
                 final delta =
                     quillController.document.toDelta(); // Get the Delta
-                final jsonString =
-                    jsonEncode(delta.toJson()); // Convert Delta to JSON string
-                ref
-                    .child(DateTime.now().millisecondsSinceEpoch.toString())
-                    .set({
-                  'id': DateTime.now().millisecondsSinceEpoch.toString(),
+                final jsonString = jsonEncode(delta.toJson());
+                ref.child(widgetId).update({
+                  'id': widgetId,
                   'title': titleController.text,
-                  'entry': jsonString, // Convert to JSON string
+                  'entry': jsonString,
                   'date': userSelectedDate.toString(),
                 });
-                // setState(() {
-                //   DiaryEntry newEntry = DiaryEntry(
-                //     title: titleController.text,
-                //     entry: entryController.text,
-                //     date: date,
-                //   );
-                //   diaryEntries.add(newEntry);
+                setState(() {
+                  userSelectedDate = DateTime.now();
+                });
                 titleController.clear();
                 quillController.clear();
+
                 Navigator.pop(context);
 
                 // Implement upload functionality
@@ -102,7 +108,7 @@ class _WriteDiaryState extends State<WriteDiary> {
             ),
           ],
           title: Text(
-            "Write !",
+            "Edit !",
             style: GoogleFonts.cedarvilleCursive(
               fontWeight: FontWeight.bold,
             ),
@@ -135,6 +141,7 @@ class _WriteDiaryState extends State<WriteDiary> {
                           Theme.of(context).textTheme.headlineLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
+                      //  controller: TextEditingController(text: widget.title),
                       controller: titleController,
                       decoration: const InputDecoration(
                           hintText: 'Title',
@@ -220,14 +227,14 @@ class _WriteDiaryState extends State<WriteDiary> {
                           onPressed: () {
                             showDatePicker(
                               context: context,
-                              initialDate: DateTime.now(),
+                              initialDate:
+                                  userSelectedDate, // Use selectedDate here
                               firstDate: DateTime(2000),
                               lastDate: DateTime(2100),
-                            ).then((selectedDate) {
-                              if (selectedDate != null) {
-                                // Handle selected date
+                            ).then((newDate) {
+                              if (newDate != null) {
                                 setState(() {
-                                  userSelectedDate = selectedDate;
+                                  userSelectedDate = newDate;
                                 });
                               }
                             });
@@ -258,16 +265,7 @@ class _WriteDiaryState extends State<WriteDiary> {
                   scrollController:
                       ScrollController(), // Provide a valid ScrollController instance
                 ),
-                // Paragraph writing
-                // TextField(
-                //   controller: entryController,
-                //   keyboardType: TextInputType.multiline,
-                //   maxLines: null, // Allow unlimited lines
-                //   decoration: const InputDecoration(
-                //     hintText: 'what happened today!',
-                //     border: InputBorder.none,
-                //   ),
-                // ),
+
                 SizedBox(height: 20),
 
                 // Divider with date picker and upload button
