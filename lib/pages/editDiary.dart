@@ -1,11 +1,16 @@
+// ignore_for_file: unnecessary_null_comparison
+
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:booness/pages/EditDiary.dart';
 import 'package:booness/pages/writeDiary.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:page_transition/page_transition.dart';
 
@@ -18,22 +23,31 @@ class EditDiary extends StatefulWidget {
   final String entry;
   final String date;
   final String id;
-  const EditDiary(
+  final List images;
+  EditDiary(
       {super.key,
       required this.title,
       required this.entry,
       required this.date,
-      required this.id});
+      required this.id,
+      required this.images});
 
   @override
   State<EditDiary> createState() => _EditDiaryState();
 }
 
 class _EditDiaryState extends State<EditDiary> {
+  TextEditingController titleController = TextEditingController();
+
+  QuillController quillController = QuillController.basic();
   String widgetId = "";
+  final _focusNode = FocusNode();
+  List<String> _images = [];
   @override
   void initState() {
     super.initState();
+
+    _images = List<String>.from(widget.images);
     userSelectedDate = DateTime.parse(widget.date);
     titleController.text = widget.title;
     widgetId = widget.id;
@@ -53,6 +67,50 @@ class _EditDiaryState extends State<EditDiary> {
       print('Error decoding JSON: $error');
       // Add error handling, potentially show a message or use a default entry
     }
+
+    quillController.addListener(() {
+      final delta = quillController.document.toDelta(); // Get the Delta
+      final jsonString = jsonEncode(delta.toJson());
+      ref.child(widgetId).update({
+        'entry': jsonString,
+
+        //  'images': _imageUrls,
+      });
+    });
+
+    titleController.addListener(() {
+      ref.child(widgetId).update({
+        'title': titleController.text,
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    quillController.removeListener(() {}); // Add this line
+    super.dispose();
+
+    titleController.removeListener(() {}); // Add this line
+    super.dispose();
+  }
+
+  final picker = ImagePicker();
+  // List to store picked images
+
+  // firebase_storage.FirebaseStorage storage =
+  //     firebase_storage.FirebaseStorage.instance;
+
+  Future pickImages() async {
+    final pickedFiles = await picker.pickMultiImage(imageQuality: 50);
+    if (pickedFiles != null) {
+      setState(() {
+        for (final file in pickedFiles) {
+          _images.add(DiaryImage(file: File(file.path)) as String);
+        }
+      });
+    } else {
+      print('No images selected.');
+    }
   }
 
   Widget build(BuildContext context) {
@@ -60,7 +118,7 @@ class _EditDiaryState extends State<EditDiary> {
         // backgroundColor: Colors.red,
         appBar: AppBar(
           leading: IconButton(
-            icon: Icon(PhosphorIcons.x_bold), // replace with your custom icon
+            icon: const Icon(PhosphorIcons.x), // replace with your custom icon
             onPressed: () {
               Navigator.push(
                 context,
@@ -74,17 +132,17 @@ class _EditDiaryState extends State<EditDiary> {
                 ),
               );
 
-              setState(() {
-                userSelectedDate = DateTime.now();
-              });
-              titleController.clear();
-              quillController.clear();
+              // setState(() {
+              //   userSelectedDate = DateTime.now();
+              // });
+              // titleController.clear();
+              // quillController.clear();
             },
           ),
           actions: [
             IconButton(
               icon: const Icon(PhosphorIcons.check),
-              color: Colors.green,
+              //color: Colors.green,
               onPressed: () {
                 final delta =
                     quillController.document.toDelta(); // Get the Delta
@@ -94,13 +152,13 @@ class _EditDiaryState extends State<EditDiary> {
                   'title': titleController.text,
                   'entry': jsonString,
                   'date': userSelectedDate.toString(),
+                  //  'images': _imageUrls,
                 });
                 setState(() {
                   userSelectedDate = DateTime.now();
                 });
-                titleController.clear();
-                quillController.clear();
 
+                _focusNode.unfocus();
                 Navigator.pop(context);
 
                 // Implement upload functionality
@@ -134,7 +192,7 @@ class _EditDiaryState extends State<EditDiary> {
                       EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
                   child: Center(
                     child: TextFormField(
-                      focusNode: FocusNode(),
+                      focusNode: _focusNode,
                       maxLines: 1,
                       maxLength: 60,
                       style:
@@ -192,37 +250,17 @@ class _EditDiaryState extends State<EditDiary> {
                             showSearchButton: false,
                             showSubscript: false,
                             showSuperscript: false,
+                            showClipboardCopy: false,
+                            showClipboardCut: false,
+                            showClipboardPaste: false,
                             controller: quillController)),
                     Row(
                       children: [
                         IconButton(
                             onPressed: () async {
-                              final pickedFiles = await pickImages();
-
-                              if (pickedFiles != null) {
-                                // Get the paths of the picked images
-                                final pickedImagePaths = pickedFiles
-                                    .map((file) => file.path)
-                                    .toList();
-
-                                // Store the images
-                                final storedImagePaths =
-                                    await storeImagePaths(pickedImagePaths);
-
-                                print('Stored image paths: $storedImagePaths');
-
-                                // Retrieve the image paths
-                                // You'll need to adjust this part to handle multiple images
-                                final retrievedImagePath =
-                                    await retrieveImagePath('your_date');
-
-                                print(
-                                    'Retrieved image path: $retrievedImagePath');
-                              } else {
-                                print('No images selected.');
-                              }
+                              await pickImages();
                             },
-                            icon: Icon(PhosphorIcons.image_bold)),
+                            icon: const Icon(PhosphorIcons.image_bold)),
                         OutlinedButton(
                           onPressed: () {
                             showDatePicker(
@@ -253,23 +291,107 @@ class _EditDiaryState extends State<EditDiary> {
                     )
                   ],
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
+                _images.isEmpty || _images[0] == "404"
+                    ? Container(
+                        height: MediaQuery.of(context).size.height * 0.05,
+                      )
+                    : Container(
+                        margin: const EdgeInsets.only(top: 20.0, bottom: 20.0),
+                        height: 150,
+                        child: ListView.builder(
+                          scrollDirection:
+                              Axis.horizontal, // For horizontal scrolling
+                          itemCount: _images.length,
+                          itemBuilder: (context, index) {
+                            return Card(
+                              margin: const EdgeInsets.only(right: 10),
+                              child: Stack(
+                                children: [
+                                  // Your existing Image with ClipRRect
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10.0),
+                                    child: Image.network(
+                                      _images[index],
+                                      errorBuilder: (context, error,
+                                              stackTrace) =>
+                                          const Icon(Icons.image_not_supported),
+                                    ),
+                                  ),
 
+                                  // The Close Button
+                                  Positioned(
+                                    top: 5, // Adjust top/right position
+                                    right: 5,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        // Remove image logic (update _images list)
+                                        setState(() {
+                                          _images.removeAt(index);
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(
+                                            4), // Increase padding around the icon
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.8),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 18, // Adjust icon size
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Three-Dot Menu Button
+                                  Positioned(
+                                    bottom: 5,
+                                    right: 5,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        // Show your options menu
+                                        showModalBottomSheet(
+                                            context: context,
+                                            builder: (context) => Container(
+                                                // Your menu options here (Remove Image, Alt Image)
+                                                ));
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.8),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.more_vert,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                 QuillEditor(
                   configurations: QuillEditorConfigurations(
                     placeholder: "What happened today?",
                     controller: quillController,
-                    readOnly: false,
                   ),
-                  focusNode: FocusNode(),
-                  scrollController:
-                      ScrollController(), // Provide a valid ScrollController instance
+                  focusNode: _focusNode,
+                  scrollController: ScrollController(),
                 ),
 
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
 
                 // Divider with date picker and upload button
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [],
                 ),
@@ -279,3 +401,13 @@ class _EditDiaryState extends State<EditDiary> {
         ));
   }
 }
+
+class DiaryImage {
+  String? url; // For pre-existing images
+  File? file; // For picked images
+
+  DiaryImage({this.url, this.file});
+}
+
+// ... inside your _EditDiaryState ...
+List<DiaryImage> _images = [];

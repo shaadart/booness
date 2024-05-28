@@ -18,13 +18,13 @@ ThemeData lightTheme() {
           color: Color(0xFF081F5C),
           fontSize: 36.0,
           fontWeight: FontWeight.bold),
-      bodyText1: TextStyle(
+      bodyLarge: TextStyle(
         color: Color(0xFF081F5C),
       ),
-      bodyText2: TextStyle(color: Color(0xFF334EAC), fontSize: 16.0),
-      subtitle1: TextStyle(color: Color(0xFF334EAC), fontSize: 16.0),
-      subtitle2: TextStyle(color: Color(0xFF334EAC), fontSize: 16.0),
-      caption: TextStyle(color: Color(0xFF334EAC), fontSize: 16.0),
+      bodyMedium: TextStyle(color: Color(0xFF334EAC), fontSize: 16.0),
+      titleMedium: TextStyle(color: Color(0xFF334EAC), fontSize: 16.0),
+      titleSmall: TextStyle(color: Color(0xFF334EAC), fontSize: 16.0),
+      bodySmall: TextStyle(color: Color(0xFF334EAC), fontSize: 16.0),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -65,10 +65,10 @@ ThemeData darkTheme() {
           color: Color(0xFFF0F0F0), // Light text on dark
           fontSize: 36.0,
           fontWeight: FontWeight.bold),
-      bodyText1: TextStyle(
+      bodyLarge: TextStyle(
         color: Color(0xFFF0F0F0),
       ),
-      bodyText2: TextStyle(
+      bodyMedium: TextStyle(
           color: Color.fromARGB(255, 255, 255, 255), // Royal for emphasis
           fontSize: 16.0),
     ),

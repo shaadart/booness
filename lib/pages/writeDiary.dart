@@ -2,20 +2,21 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:booness/services/realtime_database.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/foundation.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill/translations.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:page_transition/page_transition.dart';
 
 import '../main.dart';
 import '../models/diaryentry.dart';
+import '../models/userData.dart';
 import '../services/imageservices.dart';
 
 DateTime now = DateTime.now();
@@ -23,10 +24,6 @@ DateTime date = DateTime(now.year, now.month, now.day);
 List<DiaryEntry> diaryEntries = []; // List of diary entries
 var userSelectedDate = DateTime.now(); // User selected date in the Bottom sheet
 // Create a database reference
-
-TextEditingController titleController = TextEditingController();
-
-QuillController quillController = QuillController.basic();
 
 class WriteDiary extends StatefulWidget {
   final DiaryEntry? entry;
@@ -37,9 +34,30 @@ class WriteDiary extends StatefulWidget {
 }
 
 class _WriteDiaryState extends State<WriteDiary> {
+  TextEditingController titleController = TextEditingController();
+
+  QuillController quillController = QuillController.basic();
+  final picker = ImagePicker();
+  List<File> _images = []; // List to store picked images
+
+  // firebase_storage.FirebaseStorage storage =
+  //     firebase_storage.FirebaseStorage.instance;
+
+  Future pickImages() async {
+    final pickedFiles = await picker.pickMultiImage(imageQuality: 50);
+    if (pickedFiles != null) {
+      setState(() {
+        _images.addAll(pickedFiles.map((file) => File(file.path)).toList());
+      });
+    } else {
+      print('No images selected.');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+
     // if (widget.entry != null) {
     //   // Pre-populate the fields with existing entry data
     //   titleController.text = widget.entry!.title;
@@ -52,17 +70,98 @@ class _WriteDiaryState extends State<WriteDiary> {
   Widget build(BuildContext context) {
     return Scaffold(
         // backgroundColor: Colors.red,
+
+        bottomNavigationBar: BottomAppBar(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              QuillToolbar.simple(
+                  configurations: QuillSimpleToolbarConfigurations(
+                      showDividers: false,
+                      showFontFamily: false,
+                      showFontSize: false,
+                      showBoldButton: true,
+                      showItalicButton: true,
+                      showSmallButton: false, // Changed from false
+                      showUnderLineButton: false,
+                      showStrikeThrough: false,
+                      showInlineCode: false,
+                      showColorButton: false,
+                      showBackgroundColorButton: false,
+                      showClearFormat: false,
+                      showAlignmentButtons: true, // Changed from false
+                      showLeftAlignment: false,
+                      showCenterAlignment: false,
+                      showRightAlignment: false,
+                      showJustifyAlignment: false,
+                      showHeaderStyle: false,
+                      showListNumbers: false,
+                      showListBullets: false,
+                      showListCheck: false,
+                      showCodeBlock: false,
+                      showQuote: false,
+                      showIndent: false,
+                      showLink: false,
+                      showUndo: true,
+                      showRedo: true,
+                      showDirection: false, // Changed from false
+                      showSearchButton: false,
+                      showSubscript: false,
+                      showSuperscript: false,
+                      showClipboardCopy: false,
+                      showClipboardCut: false,
+                      showClipboardPaste: false,
+                      controller: quillController)),
+              Row(
+                children: [
+                  IconButton(
+                      onPressed: () async {
+                        await pickImages();
+                      },
+                      icon: const Icon(PhosphorIcons.image)),
+                  OutlinedButton(
+                    onPressed: () {
+                      showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      ).then((selectedDate) {
+                        if (selectedDate != null) {
+                          // Handle selected date
+                          setState(() {
+                            userSelectedDate = selectedDate;
+                          });
+                        }
+                      });
+                    },
+                    child: Row(
+                      children: [
+                        // ignore: unnecessary_null_comparison
+                        Text(userSelectedDate != null
+                            ? DateFormat('dd-MM-yyyy').format(userSelectedDate)
+                            // Replace colon with comma and add DateTime.now()
+                            : DateFormat('dd-MM-yyyy').format(date)),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+        ),
         appBar: AppBar(
           leading: IconButton(
-            icon: Icon(PhosphorIcons.x_bold), // replace with your custom icon
+            icon: const Icon(
+                PhosphorIcons.x_bold), // replace with your custom icon
             onPressed: () {
               Navigator.push(
                 context,
                 PageTransition(
                   curve: Curves.fastEaseInToSlowEaseOut,
-                  duration: Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 300),
                   type: PageTransitionType.topToBottom,
-                  child: HomeScreen(
+                  child: const HomeScreen(
                     title: '',
                   ),
                 ),
@@ -72,19 +171,33 @@ class _WriteDiaryState extends State<WriteDiary> {
           actions: [
             IconButton(
               icon: const Icon(PhosphorIcons.check),
-              color: Colors.green,
-              onPressed: () {
+              //color: Colors.green,
+              onPressed: () async {
+                String id = DateTime.now().millisecondsSinceEpoch.toString();
+                firebase_storage.Reference storage_ref =
+                    storage.ref('/${uid}/${id}');
+
+                // Create a list to store downloaded image URLs
+                List<String> imageUrls = [];
+
+                for (var image in _images) {
+                  firebase_storage.UploadTask task = storage_ref
+                      .child(image.path)
+                      .putFile(image); //  Include file name
+                  await Future.value(task);
+                  String downloadUrl = await task.snapshot.ref.getDownloadURL();
+                  imageUrls.add(downloadUrl);
+                }
                 final delta =
                     quillController.document.toDelta(); // Get the Delta
                 final jsonString =
                     jsonEncode(delta.toJson()); // Convert Delta to JSON string
-                ref
-                    .child(DateTime.now().millisecondsSinceEpoch.toString())
-                    .set({
-                  'id': DateTime.now().millisecondsSinceEpoch.toString(),
+                ref.child(id).set({
+                  'id': id,
                   'title': titleController.text,
                   'entry': jsonString, // Convert to JSON string
                   'date': userSelectedDate.toString(),
+                  'images': imageUrls,
                 });
                 // setState(() {
                 //   DiaryEntry newEntry = DiaryEntry(
@@ -149,132 +262,104 @@ class _WriteDiaryState extends State<WriteDiary> {
                 // SizedBox(height: 20),
 
                 // Text formatting tools
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    QuillToolbar.simple(
-                        configurations: QuillSimpleToolbarConfigurations(
-                            showDividers: false,
-                            showFontFamily: false,
-                            showFontSize: false,
-                            showBoldButton: true,
-                            showItalicButton: true,
-                            showSmallButton: false, // Changed from false
-                            showUnderLineButton: false,
-                            showStrikeThrough: false,
-                            showInlineCode: false,
-                            showColorButton: false,
-                            showBackgroundColorButton: false,
-                            showClearFormat: false,
-                            showAlignmentButtons: true, // Changed from false
-                            showLeftAlignment: false,
-                            showCenterAlignment: false,
-                            showRightAlignment: false,
-                            showJustifyAlignment: false,
-                            showHeaderStyle: false,
-                            showListNumbers: false,
-                            showListBullets: false,
-                            showListCheck: false,
-                            showCodeBlock: false,
-                            showQuote: false,
-                            showIndent: false,
-                            showLink: false,
-                            showUndo: false,
-                            showRedo: false,
-                            showDirection: false, // Changed from false
-                            showSearchButton: false,
-                            showSubscript: false,
-                            showSuperscript: false,
-                            controller: quillController)),
-                    Row(
-                      children: [
-                        IconButton(
-                            onPressed: () async {
-                              final pickedFiles = await pickImages();
 
-                              if (pickedFiles != null) {
-                                // Get the paths of the picked images
-                                final pickedImagePaths = pickedFiles
-                                    .map((file) => file.path)
-                                    .toList();
+                //   SizedBox(height: 10),
 
-                                // Store the images
-                                final storedImagePaths =
-                                    await storeImagePaths(pickedImagePaths);
+                (_images.isNotEmpty)
+                    ? Container(
+                        margin: const EdgeInsets.only(top: 20.0, bottom: 20.0),
+                        height: 150, // Adjust height as needed
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _images.length,
+                          itemBuilder: (context, index) {
+                            return Card(
+                              margin: const EdgeInsets.only(right: 10),
+                              child: Stack(
+                                children: [
+                                  // Your existing Image with ClipRRect
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10.0),
+                                    child: Image.file(_images[index]),
+                                  ),
 
-                                print('Stored image paths: $storedImagePaths');
+                                  // The Close Button
+                                  Positioned(
+                                    top: 5, // Adjust top/right position
+                                    right: 5,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        // Remove image logic (update _images list)
+                                        setState(() {
+                                          _images.removeAt(index);
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(
+                                            4), // Increase padding around the icon
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.8),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 18, // Adjust icon size
+                                        ),
+                                      ),
+                                    ),
+                                  ),
 
-                                // Retrieve the image paths
-                                // You'll need to adjust this part to handle multiple images
-                                final retrievedImagePath =
-                                    await retrieveImagePath('your_date');
-
-                                print(
-                                    'Retrieved image path: $retrievedImagePath');
-                              } else {
-                                print('No images selected.');
-                              }
-                            },
-                            icon: Icon(PhosphorIcons.image_bold)),
-                        OutlinedButton(
-                          onPressed: () {
-                            showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                            ).then((selectedDate) {
-                              if (selectedDate != null) {
-                                // Handle selected date
-                                setState(() {
-                                  userSelectedDate = selectedDate;
-                                });
-                              }
-                            });
+                                  // Three-Dot Menu Button
+                                  Positioned(
+                                    bottom: 5,
+                                    right: 5,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        // Show your options menu
+                                        showModalBottomSheet(
+                                            context: context,
+                                            builder: (context) => Container(
+                                                // Your menu options here (Remove Image, Alt Image)
+                                                ));
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.8),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.more_vert,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
                           },
-                          child: Row(
-                            children: [
-                              Text(userSelectedDate != null
-                                  ? DateFormat('dd-MM-yyyy')
-                                      .format(userSelectedDate)
-                                  // Replace colon with comma and add DateTime.now()
-                                  : DateFormat('dd-MM-yyyy').format(date)),
-                            ],
-                          ),
                         ),
-                      ],
-                    )
-                  ],
-                ),
-                SizedBox(height: 20),
+                      )
+                    : Container(
+                        height: MediaQuery.of(context).size.height * 0.05,
+                      ),
 
                 QuillEditor(
                   configurations: QuillEditorConfigurations(
                     placeholder: "What happened today?",
                     controller: quillController,
-                    readOnly: false,
                   ),
                   focusNode: FocusNode(),
                   scrollController:
                       ScrollController(), // Provide a valid ScrollController instance
                 ),
-                // Paragraph writing
-                // TextField(
-                //   controller: entryController,
-                //   keyboardType: TextInputType.multiline,
-                //   maxLines: null, // Allow unlimited lines
-                //   decoration: const InputDecoration(
-                //     hintText: 'what happened today!',
-                //     border: InputBorder.none,
-                //   ),
-                // ),
-                SizedBox(height: 20),
+
+                const SizedBox(height: 20),
 
                 // Divider with date picker and upload button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [],
-                ),
               ],
             ),
           ),

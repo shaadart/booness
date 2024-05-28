@@ -28,35 +28,38 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  cloud_firestore: null
-  cupertino_icons: ^1.0.2
-  custom_refresh_indicator: ^3.0.0
-  dart_image_slider: ^0.0.1
-  easy_rich_text: ^2.1.0
-  file_picker: ^6.1.1
-  firebase_auth: null
-  firebase_core: null
-  firebase_database: null
-  app_bar_with_search_switch: ^1.7.0
+  firebase_app_check:
+  cloud_firestore: 
+  image_picker:
+  firebase_storage:
+  cupertino_icons: 
+  custom_refresh_indicator: 
+  highlightable: ^1.0.5
+  dart_image_slider: 
+  easy_rich_text: 
+  file_picker: 
+  firebase_auth:
+  firebase_core:
+  firebase_database:
+  app_bar_with_search_switch: 
   flutter:
     sdk: flutter
-  flutter_cache_manager: ^3.3.1
-  flutter_phosphor_icons: ^0.0.1+6
-  flutter_quill: ^9.2.12
-  google_fonts: ^6.1.0
-  google_sign_in: ^5.4.4
-  image: ^4.1.7
-  intl: null
-  adaptive_theme: ^3.6.0
+  flutter_cache_manager:
+  flutter_phosphor_icons:
+  flutter_quill: ^9.3.10
+  google_fonts:
+  google_sign_in:
+  image:
+  intl: ^0.19.0
+  adaptive_theme:
   animate_do:
-  page_transition: ^2.1.0
-  path_provider: ^2.1.2
-
-  shared_preferences: ^2.2.2
-  staggered_grid_view_flutter: ^0.0.4
+  page_transition:
+  path_provider: 
+  shared_preferences: 
+  staggered_grid_view_flutter: 
 
 dev_dependencies:
-  flutter_lints: ^2.0.0
+  flutter_lints: 
   flutter_test:
     sdk: flutter
 
