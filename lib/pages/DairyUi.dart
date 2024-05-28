@@ -1,18 +1,12 @@
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:math';
 
-import 'package:booness/main.dart';
-import 'package:booness/models/userData.dart';
 import 'package:booness/pages/editDiary.dart';
-import 'package:booness/pages/writeDiary.dart';
+
 import 'package:booness/services/realtime_database.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_database/ui/firebase_animated_list.dart';
-import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
+
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,8 +15,6 @@ import 'package:intl/intl.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_grid_view.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_tile.dart';
-
-import '../models/diaryentry.dart';
 import '../services/storageServices.dart';
 
 TextEditingController searchController = TextEditingController();
@@ -79,6 +71,18 @@ class _DiaryUIState extends State<DiaryUI> {
                             List<dynamic> monthEntries =
                                 groupedEntries[monthYear]!;
 
+                            List filteredEntries = monthEntries;
+                            searchController.addListener(() {
+                              setState(() {
+                                filteredEntries = monthEntries.where((entry) {
+                                  return entry['title'].toLowerCase().contains(
+                                          searchController.text
+                                              .toLowerCase()) ||
+                                      entry['entry'].toLowerCase().contains(
+                                          searchController.text.toLowerCase());
+                                }).toList();
+                              });
+                            });
                             // Get Month Name and Year
                             String formattedMonthYear =
                                 _formatMonthYear(monthYear);
@@ -145,33 +149,37 @@ class _DiaryUIState extends State<DiaryUI> {
                                         },
                                         onLongPress: () {
                                           _deleteEntry(
-                                              monthEntries[entryIndex]['id']);
+                                              filteredEntries[entryIndex]
+                                                  ['id']);
                                         },
                                         child: DiaryCard(
-                                            monthEntries[entryIndex]['entry'],
-                                            monthEntries[entryIndex]['title'],
-                                            monthEntries[entryIndex]['date']
+                                            filteredEntries[entryIndex]
+                                                ['entry'],
+                                            filteredEntries[entryIndex]
+                                                ['title'],
+                                            filteredEntries[entryIndex]['date']
                                                 .toString()
                                                 .substring(0, 10),
-                                            monthEntries[entryIndex]['id'],
-                                            monthEntries[entryIndex]['images']),
+                                            filteredEntries[entryIndex]['id'],
+                                            filteredEntries[entryIndex]
+                                                ['images']),
                                       );
                                     } else if (title.toLowerCase().contains(
-                                            searchController.text.toLowerCase()
-                                              ..toLowerCase()) ||
-                                        monthEntries[entryIndex]['entry']
+                                            searchController.text
+                                                .toLowerCase()) ||
+                                        filteredEntries[entryIndex]['entry']
                                             .toLowerCase()
                                             .contains(searchController.text
-                                                .toLowerCase()
                                                 .toLowerCase())) {
                                       return DiaryCard(
-                                          monthEntries[entryIndex]['entry'],
-                                          monthEntries[entryIndex]['title'],
-                                          monthEntries[entryIndex]['date']
+                                          filteredEntries[entryIndex]['entry'],
+                                          filteredEntries[entryIndex]['title'],
+                                          filteredEntries[entryIndex]['date']
                                               .toString()
                                               .substring(0, 10),
-                                          monthEntries[entryIndex]['id'],
-                                          monthEntries[entryIndex]['images']);
+                                          filteredEntries[entryIndex]['id'],
+                                          filteredEntries[entryIndex]
+                                              ['images']);
                                       // Add your code here
                                     } else {
                                       // Add a return statement at the end
@@ -260,9 +268,13 @@ class _DiaryUIState extends State<DiaryUI> {
         print(DateTime.parse(date).toString());
       },
       child: Card(
+        color: Colors.white10,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.0),
-          side: const BorderSide(width: 1.2),
+          side: const BorderSide(
+            width: 2,
+            color: Colors.black87,
+          ),
         ),
         elevation: 0,
         child: Column(
@@ -277,7 +289,7 @@ class _DiaryUIState extends State<DiaryUI> {
                         : []),
                 caseSensitive: false, // Turn on case-sensitive.
                 detectWords: true, // Turn on full-word-detection.
-      
+
                 highlightStyle: TextStyle(
                   fontSize: const TextStyle().fontSize,
                   color: const Color.fromARGB(255, 253, 253, 253),
@@ -301,7 +313,7 @@ class _DiaryUIState extends State<DiaryUI> {
                         : []),
                 caseSensitive: false, // Turn on case-sensitive.
                 detectWords: true, // Turn on full-word-detection.
-      
+
                 highlightStyle: TextStyle(
                   fontSize: const TextStyle().fontSize,
                   color: const Color.fromARGB(255, 253, 253, 253),
@@ -317,18 +329,22 @@ class _DiaryUIState extends State<DiaryUI> {
                 style: const TextStyle(fontSize: 8),
               ),
             ),
-      
+
             if (imageUrls != null && imageUrls.isNotEmpty)
               SizedBox(
-                   height: 100,
+                height: 100,
                 child: ListView.builder(
                   scrollDirection:
                       Axis.horizontal, // Make images scrollable horizontally
                   itemCount: imageUrls.length,
                   itemBuilder: (context, index) {
                     return Container(
-                   
-                      
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 255, 255, 255),
+                          width: 2.0,
+                        ),
+                      ),
                       child: Image.network(imageUrls[index]),
                     );
                   },

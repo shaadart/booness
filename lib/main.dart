@@ -78,7 +78,9 @@ class _HomeScreenState extends State<HomeScreen> {
         closeSearchIcon: PhosphorIcons.x,
         clearSearchIcon: PhosphorIcons.x,
         onChanged: (text) {
-          setState(() {});
+          setState(() {
+            print(text);
+          });
         },
         onCleared: () {
           setState(() {
@@ -114,6 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     right: MediaQuery.of(context).size.width * 0.05),
                 child: IconButton(
                     onPressed: () {
+                      searchController.clear();
                       AppBarWithSearchSwitch.of(context)!.startSearch();
                       // Navigator.push(context, MaterialPageRoute(builder: (context) => SearchPage()));
                     },
