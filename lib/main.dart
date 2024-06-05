@@ -2,14 +2,16 @@ import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:app_bar_with_search_switch/app_bar_with_search_switch.dart';
 import 'package:booness/firebase_options.dart';
 import 'package:booness/models/userData.dart';
-import 'package:booness/pages/signin.dart';
 import 'package:booness/services/themes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:page_transition/page_transition.dart';
 import 'pages/DairyUi.dart';
+import 'pages/Set up and sign up/signin.dart';
+import 'pages/Stats/writeDiary.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +34,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return AdaptiveTheme(
@@ -58,7 +59,21 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  get builder => null;
+  //final TextEditingController searchController = TextEditingController();
+
+  Future<void> _refreshContent() async {
+    // Add your refresh logic here. For example, fetch new data from the database.
+    // This is just a placeholder for your actual data fetching logic.
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() {
+      // Update your state to reflect new data
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +148,24 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-      body: const DiaryUI(),
+      body: RefreshIndicator(
+        onRefresh: _refreshContent,
+        child: DiaryUI(),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(PhosphorIcons.plus),
+        onPressed: () {
+          userSelectedDate = DateTime.now();
+          Navigator.push(
+              context,
+              PageTransition(
+                curve: Curves.fastEaseInToSlowEaseOut,
+                duration: const Duration(milliseconds: 200),
+                type: PageTransitionType.bottomToTop,
+                child: const WriteDiary(),
+              ));
+        },
+      ),
     );
   }
 }

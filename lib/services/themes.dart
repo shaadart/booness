@@ -1,7 +1,8 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'package:flutter/material.dart';
 
 ThemeData lightTheme() {
-  print("objectifying Theme...");
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
       seedColor: Color(0xFF334EAC), // Royal
@@ -9,8 +10,6 @@ ThemeData lightTheme() {
       primary: Color(0xFF334EAC), // Royal
       secondary: Color(0xFFBAD6EB), // Sky
       tertiary: Color(0xFF7096D1), // China
-      background: Color.fromARGB(255, 254, 254, 254), // Moon
-      onBackground: Color(0xFF081F5C), // Midnight
       surface: Color(0xFFFFFFFF), // Porcelain (Pure white for contrast)
     ),
     textTheme: const TextTheme(
@@ -56,8 +55,6 @@ ThemeData darkTheme() {
       primary: Color(0xFF7096D1), // China (slightly muted in darkness)
       secondary: Color(0xFF334EAC), // Royal (contrasting accent)
       tertiary: Color(0xFF081F5C), // Midnight (deepest shade)
-      background: Color(0xFF121212), // True dark for background
-      onBackground: Color(0xFFF0F0F0), // Light text for readability
       surface: Color(0xFF292929), // Slightly lighter surface for depth
     ),
     textTheme: const TextTheme(

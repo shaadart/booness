@@ -1,4 +1,4 @@
-import 'package:booness/pages/setUsername.dart';
+import 'package:booness/pages/Set%20up%20and%20sign%20up/setUsername.dart';
 import 'package:booness/services/realtime_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:page_transition/page_transition.dart';
 
-import '../main.dart';
+import '../../main.dart';
 
 // void main() => runApp(MyApp());
 

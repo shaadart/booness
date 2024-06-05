@@ -29,6 +29,7 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   firebase_app_check:
+  flutter_heatmap_calendar: ^1.0.5
   cloud_firestore: 
   image_picker:
   firebase_storage:
@@ -42,6 +43,8 @@ dependencies:
   firebase_core:
   firebase_database:
   app_bar_with_search_switch: 
+  flutter_image_compress: ^2.3.0
+  easy_draggable: ^0.0.2
   flutter:
     sdk: flutter
   flutter_cache_manager:
@@ -55,8 +58,11 @@ dependencies:
   animate_do:
   page_transition:
   path_provider: 
+  reorderable_grid_view: ^2.2.8
   shared_preferences: 
   staggered_grid_view_flutter: 
+  confetti: ^0.7.0
+  flutter_sticky_widgets: ^0.0.3
 
 dev_dependencies:
   flutter_lints: 
