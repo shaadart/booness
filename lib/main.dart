@@ -1,7 +1,9 @@
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:app_bar_with_search_switch/app_bar_with_search_switch.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:booness/firebase_options.dart';
 import 'package:booness/models/userData.dart';
+import 'package:booness/services/notification_services.dart';
 import 'package:booness/services/themes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,18 +12,43 @@ import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';
 import 'pages/DairyUi.dart';
-import 'pages/Set up and sign up/signin.dart';
-import 'pages/Stats/writeDiary.dart';
+import 'pages/Set up and sign up/onboardoing.dart';
+import 'pages/Write and Edit/writeDiary.dart';
+import 'pages/settings/setting_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  AwesomeNotifications().initialize(
+      // set the icon to null if you want to use the default app icon
+      null,
+      [
+        NotificationChannel(
+            channelKey: 'daily_reminders',
+            channelName: 'Basic notifications',
+            channelDescription:
+                'Notifications for the Daily Reminders to write the Diary',
+            defaultColor: Color(0xFF9D50DD),
+            channelShowBadge: true,
+            importance: NotificationImportance.High,
+            ledColor: Colors.white)
+      ],
+      // Channel groups are only visual and are not required
+      channelGroups: [
+        NotificationChannelGroup(
+            channelGroupKey: 'daily_reminders',
+            channelGroupName: 'Daily Reminder')
+      ],
+      debug: true);
+  await checkAndRenewLives();
+
   runApp(MaterialApp(
-      // debugShowCheckedModeBanner: true,
+      // debugShowCheckedModeBanner: false,
       // home: MyApp()
-      home: currentUser != null ? const MyApp() : const LoginScreen()));
+      home: currentUser != null ? const MyApp() : OnBoardingScreen()));
 }
 
 final currentUser = FirebaseAuth.instance.currentUser;
@@ -44,7 +71,9 @@ class _MyAppState extends State<MyApp> {
               debugShowCheckedModeBanner: false,
               title: 'Flutter Demo',
               theme: theme,
-              home: const HomeScreen(title: 'Daily Goodness'),
+
+              home: const OnBoardingScreen(),
+              //  home: const HomeScreen(title: 'Daily Goodness'),
             ));
   }
 }
@@ -59,19 +88,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  //final TextEditingController searchController = TextEditingController();
-
-  Future<void> _refreshContent() async {
-    // Add your refresh logic here. For example, fetch new data from the database.
-    // This is just a placeholder for your actual data fetching logic.
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {
-      // Update your state to reflect new data
-    });
-  }
-
   @override
   void initState() {
+    AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
+      if (!isAllowed) {
+        AwesomeNotifications().requestPermissionToSendNotifications();
+      }
+    });
+
     super.initState();
   }
 
@@ -79,15 +103,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWithSearchSwitch(
+        titleTextStyle: GoogleFonts.silkscreen(fontSize: 21),
         customTextEditingController: searchController,
-        toolbarTextStyle: GoogleFonts.cedarvilleCursive(
+        toolbarTextStyle: GoogleFonts.silkscreen(
           fontWeight: FontWeight.bold,
         ),
         searchInputDecoration: InputDecoration(
-          hintText: "Search your diary",
-          hintStyle: GoogleFonts.cedarvilleCursive(
-            fontWeight: FontWeight.bold,
-          ),
+          hintText: "Search Diary",
+          hintStyle: GoogleFonts.silkscreen(),
           border: InputBorder.none,
         ),
         closeSearchIcon: PhosphorIcons.x,
@@ -112,18 +135,31 @@ class _HomeScreenState extends State<HomeScreen> {
         appBarBuilder: (context) {
           return AppBar(
             elevation: 4,
-            leading: GestureDetector(
-              onTap: () => AdaptiveTheme.of(context).setDark(),
-              onDoubleTap: () => AdaptiveTheme.of(context).setLight(),
-              child: CircleAvatar(
-                radius: 25,
-                backgroundImage: NetworkImage(
-                  scale: 0.5,
-                  photoUrl!,
-                ),
-              ),
+            leading: Row(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(
+                      left: MediaQuery.of(context).size.width * 0.03),
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                          curve: Curves.fastEaseInToSlowEaseOut,
+                          duration: const Duration(milliseconds: 200),
+                          type: PageTransitionType.leftToRight,
+                          child: SettingPage(),
+                        )),
+                    onDoubleTap: () => AdaptiveTheme.of(context).setLight(),
+                    child: CircleAvatar(
+                      backgroundImage: NetworkImage(
+                        photoUrl!,
+                      ),
+                    ),
 
-              // Your CircleAvatar properties here
+                    // Your CircleAvatar properties here
+                  ),
+                ),
+              ],
             ),
             actions: [
               Padding(
@@ -133,29 +169,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () {
                       searchController.clear();
                       AppBarWithSearchSwitch.of(context)!.startSearch();
+
                       // Navigator.push(context, MaterialPageRoute(builder: (context) => SearchPage()));
                     },
                     icon: const Icon(PhosphorIcons.magnifying_glass)),
               ),
             ],
-            title: Text(
-              "Booness",
-              style: GoogleFonts.cedarvilleCursive(
-                fontWeight: FontWeight.bold,
+            title: GestureDetector(
+              onTap: () {
+                setState(() {
+                  searchController.clear();
+                  AppBarWithSearchSwitch.of(context)!.startSearch();
+                });
+              },
+              child: Text(
+                "Booness",
+                style: GoogleFonts.silkscreen(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             centerTitle: true,
           );
         },
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshContent,
-        child: DiaryUI(),
-      ),
+      body: const DiaryUI(),
       floatingActionButton: FloatingActionButton(
         child: const Icon(PhosphorIcons.plus),
         onPressed: () {
-          userSelectedDate = DateTime.now();
+          createDailyNotification(context);
+
           Navigator.push(
               context,
               PageTransition(

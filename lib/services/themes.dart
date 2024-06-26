@@ -1,8 +1,10 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 ThemeData lightTheme() {
+  print("objectifying Theme...");
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
       seedColor: Color(0xFF334EAC), // Royal
@@ -12,7 +14,7 @@ ThemeData lightTheme() {
       tertiary: Color(0xFF7096D1), // China
       surface: Color(0xFFFFFFFF), // Porcelain (Pure white for contrast)
     ),
-    textTheme: const TextTheme(
+    textTheme: TextTheme(
       headlineLarge: TextStyle(
           color: Color(0xFF081F5C),
           fontSize: 36.0,
@@ -49,6 +51,7 @@ ThemeData lightTheme() {
 ThemeData darkTheme() {
   print("objectifying Theme...");
   return ThemeData(
+    fontFamily: GoogleFonts.uchen().fontFamily,
     colorScheme: ColorScheme.fromSeed(
       seedColor: Color(0xFFBAD6EB), // Muted Sky, base of dark theme
       brightness: Brightness.dark,
@@ -57,16 +60,16 @@ ThemeData darkTheme() {
       tertiary: Color(0xFF081F5C), // Midnight (deepest shade)
       surface: Color(0xFF292929), // Slightly lighter surface for depth
     ),
-    textTheme: const TextTheme(
+    textTheme: TextTheme(
       headlineLarge: TextStyle(
-          color: Color(0xFFF0F0F0), // Light text on dark
+          color: Color.fromARGB(199, 240, 240, 240), // Light text on dark
           fontSize: 36.0,
           fontWeight: FontWeight.bold),
       bodyLarge: TextStyle(
-        color: Color(0xFFF0F0F0),
+        color: Color.fromARGB(255, 183, 183, 183),
       ),
       bodyMedium: TextStyle(
-          color: Color.fromARGB(255, 255, 255, 255), // Royal for emphasis
+          color: Color.fromARGB(217, 255, 255, 255), // Royal for emphasis
           fontSize: 16.0),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(

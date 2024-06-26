@@ -4,13 +4,14 @@ import 'package:booness/services/realtime_database.dart';
 import 'package:confetti/confetti.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_grid_view.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_tile.dart';
-import 'Stats/writeDiary.dart';
+import 'Stats/stats.dart';
+import 'Write and Edit/writeDiary.dart';
 import 'DiaryCard.dart';
+
 
 TextEditingController searchController = TextEditingController();
 
@@ -18,7 +19,6 @@ class DiaryUI extends StatefulWidget {
   const DiaryUI({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _DiaryUIState createState() => _DiaryUIState();
 }
 
@@ -49,13 +49,22 @@ class _DiaryUIState extends State<DiaryUI> {
   @override
   void initState() {
     super.initState();
+    searchController.addListener(_onSearchChanged);
     controllerBottomCenter =
         ConfettiController(duration: const Duration(seconds: 10));
+  }
+
+  void _onSearchChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
     controllerBottomCenter.dispose();
+    searchController.removeListener(_onSearchChanged);
+    searchController.dispose();
     super.dispose();
   }
 
@@ -63,9 +72,8 @@ class _DiaryUIState extends State<DiaryUI> {
   Widget build(BuildContext context) {
     return ConfettiWidget(
       confettiController: controllerBottomCenter,
-      blastDirectionality: BlastDirectionality
-          .explosive, // don't specify a direction, blast randomly
-      shouldLoop: false, // start again as soon as the animation is finished
+      blastDirectionality: BlastDirectionality.explosive,
+      shouldLoop: false,
       colors: const [
         Colors.green,
         Colors.blue,
@@ -81,93 +89,98 @@ class _DiaryUIState extends State<DiaryUI> {
         Colors.cyan,
         Colors.indigo,
         Colors.lime,
-        Colors.indigoAccent
-      ], // manual
-      child: Padding(
-        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.9,
-          child: StreamBuilder<DatabaseEvent>(
-            stream: ref.onValue,
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
+        Colors.indigoAccent,
+      ],
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.9,
+        child: StreamBuilder<DatabaseEvent>(
+          stream: ref.onValue,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-              Map<dynamic, dynamic> map = snapshot.data!.snapshot.value != null
-                  ? snapshot.data!.snapshot.value as Map<dynamic, dynamic>
-                  : {};
-              List<dynamic> list = map.values.toList();
-              Map<String, List<dynamic>> groupedEntries = _groupByMonth(list);
+            Map<dynamic, dynamic> map = snapshot.data!.snapshot.value != null
+                ? snapshot.data!.snapshot.value as Map<dynamic, dynamic>
+                : {};
+            List<dynamic> list = map.values.toList();
+            Map<String, List<dynamic>> groupedEntries = _groupByMonth(list);
 
-              // Filter grouped entries based on search criteria
-              Map<String, List<dynamic>> filteredGroupedEntries = {};
-              String searchText = searchController.text.toLowerCase();
-              groupedEntries.forEach((monthYear, entries) {
-                List<dynamic> filteredEntries = entries.where((entry) {
-                  return entry['title'].toLowerCase().contains(searchText) ||
-                      entry['entry'].toLowerCase().contains(searchText);
-                }).toList();
+            Map<String, List<dynamic>> filteredGroupedEntries =
+                _filterEntries(groupedEntries);
 
-                if (filteredEntries.isNotEmpty) {
-                  filteredGroupedEntries[monthYear] = filteredEntries;
-                }
-              });
+            if (filteredGroupedEntries.isEmpty) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Stats(),
+                    SizedBox(height: 20),
+                    Text(
+                      "Don't forget your days! \n ever again \t\t\t\t\t\t tap +",
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
 
-              return (filteredGroupedEntries.isNotEmpty)
-                  ? ListView.builder(
-                      itemCount: filteredGroupedEntries.length,
-                      itemBuilder: (context, monthIndex) {
-                        String monthYear =
-                            filteredGroupedEntries.keys.elementAt(monthIndex);
-                        List<dynamic> monthEntries =
-                            filteredGroupedEntries[monthYear]!;
+            return CustomScrollView(
+              slivers: [
+                const SliverToBoxAdapter(
+                  child: Stats(),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, monthIndex) {
+                      String monthYear =
+                          filteredGroupedEntries.keys.elementAt(monthIndex);
+                      List<dynamic> monthEntries =
+                          filteredGroupedEntries[monthYear]!;
 
-                        // Get Month Name and Year
-                        String formattedMonthYear = _formatMonthYear(monthYear);
+                      String formattedMonthYear = _formatMonthYear(monthYear);
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Padding(
-                              padding: EdgeInsets.all(
-                                  MediaQuery.of(context).size.width * 0.065),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    formattedMonthYear.substring(
-                                        0, formattedMonthYear.length - 4),
-                                    style: GoogleFonts.cedarvilleCursive(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Padding(
+                            padding: EdgeInsets.all(
+                                MediaQuery.of(context).size.width * 0.065),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Text(
+                                  formattedMonthYear.substring(
+                                      0, formattedMonthYear.length - 4),
+                                  style: GoogleFonts.silkscreen(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  Text(
-                                    formattedMonthYear.substring(
-                                        formattedMonthYear.indexOf(' ') + 1),
-                                    style: GoogleFonts.cedarvilleCursive(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w400,
-                                    ),
+                                ),
+                                Text(
+                                  formattedMonthYear.substring(
+                                      formattedMonthYear.indexOf(' ') + 1),
+                                  style: GoogleFonts.silkscreen(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            StaggeredGridView.countBuilder(
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: StaggeredGridView.countBuilder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               crossAxisCount: 2,
                               itemCount: monthEntries.length,
                               itemBuilder: (context, entryIndex) {
-
                                 return GestureDetector(
                                   onDoubleTap: () async {
                                     if (controllerBottomCenter.hasListeners) {
                                       controllerBottomCenter.play();
                                     }
-
-                                    print(monthEntries[entryIndex]['images']);
                                   },
                                   child: DiaryCard(
                                     entry: monthEntries[entryIndex]['entry'],
@@ -190,16 +203,45 @@ class _DiaryUIState extends State<DiaryUI> {
                               staggeredTileBuilder: (int index) =>
                                   const StaggeredTile.fit(1),
                             ),
-                          ],
-                        );
-                      },
-                    )
-                  : const Center(child: Text("Don't forget your days! \n ever again \t\t\t\t\t\t tap +"));
-            },
-          ),
+                          ),
+                        ],
+                      );
+                    },
+                    childCount: filteredGroupedEntries.length,
+                  ),
+                ),
+                const SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      Text(" "),
+                      Text(" "),
+                      Text(" "),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
+  }
+
+  Map<String, List<dynamic>> _filterEntries(
+      Map<String, List<dynamic>> groupedEntries) {
+    Map<String, List<dynamic>> filteredGroupedEntries = {};
+    String searchText = searchController.text.toLowerCase();
+    groupedEntries.forEach((monthYear, entries) {
+      List<dynamic> filteredEntries = entries.where((entry) {
+        return entry['title'].toLowerCase().contains(searchText) ||
+            entry['entry'].toLowerCase().contains(searchText);
+      }).toList();
+
+      if (filteredEntries.isNotEmpty) {
+        filteredGroupedEntries[monthYear] = filteredEntries;
+      }
+    });
+    return filteredGroupedEntries;
   }
 
   String _formatMonthYear(String monthYearKey) {

@@ -1,7 +1,9 @@
+// ignore_for_file: unnecessary_null_comparison
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:image/image.dart' as img;
-import 'package:booness/pages/Stats/writeDiary.dart';
+import 'package:booness/pages/Write%20and%20Edit/writeDiary.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
@@ -13,7 +15,6 @@ import 'package:page_transition/page_transition.dart';
 
 import '../../main.dart';
 import '../../models/userData.dart';
-import '../../services/imageservices.dart';
 import '../../services/realtime_database.dart';
 
 class EditDiary extends StatefulWidget {
@@ -44,6 +45,9 @@ class _EditDiaryState extends State<EditDiary> {
   List<String> _imagesNetwork = [];
   List<File> _imagesFile = [];
   bool isLoading = false;
+
+  int maxLines = 1;
+  double _titleFontSize = 21;
 
   @override
   void initState() {
@@ -79,6 +83,31 @@ class _EditDiaryState extends State<EditDiary> {
         'title': titleController.text,
       });
     });
+    titleController.addListener(_updateMaxLines);
+    titleController.addListener(_adjustFontSize);
+  }
+
+  void _updateMaxLines() {
+    setState(() {
+      int charCount = titleController.text.length;
+      maxLines = (charCount / 15).ceil().clamp(1, 4);
+    });
+  }
+
+  void _adjustFontSize() {
+    int charCount = titleController.text.length;
+    // Assuming you want the font size to reach 16px at 100 characters
+    // Calculate the decrease per character
+    double decreasePerChar = (30 - 16) / 75; // Adjust this formula as needed
+
+    setState(() {
+      // Calculate new font size based on character count
+      _titleFontSize = 30 - (charCount * decreasePerChar);
+      // Ensure font size does not go below 16
+      if (_titleFontSize < 16) _titleFontSize = 16;
+      // Ensure font size does not exceed 30
+      if (_titleFontSize > 30) _titleFontSize = 30;
+    });
   }
 
   @override
@@ -108,17 +137,21 @@ class _EditDiaryState extends State<EditDiary> {
       }
 
       for (var file in pickedFiles) {
-        // Compress and add the image file as before
         final bytes = await file.readAsBytes();
         img.Image? image = img.decodeImage(bytes);
 
         if (image != null) {
-          img.Image compressedImage = img.copyResize(image, width: 400);
-          List<int> compressedBytes =
-              img.encodeJpg(compressedImage, quality: 45);
+          img.Image compressedImage = img.copyResize(image, width: 500);
+          List<int> compressedBytes;
+
+          if (image.hasAlpha) {
+            compressedBytes = img.encodePng(compressedImage);
+          } else {
+            compressedBytes = img.encodeJpg(compressedImage, quality: 45);
+          }
+
           File compressedFile = File(file.path)
             ..writeAsBytesSync(compressedBytes);
-
           _imagesFile.add(compressedFile);
         }
       }
@@ -130,16 +163,13 @@ class _EditDiaryState extends State<EditDiary> {
   }
 
   Future<void> deleteImage(String url) async {
-    // Delete image from Firebase Storage
     firebase_storage.Reference storageRef =
         firebase_storage.FirebaseStorage.instance.refFromURL(url);
     await storageRef.delete();
 
-    // Update the list of image URLs in Firebase Realtime Database
     _imagesNetwork.remove(url);
     ref.child(widgetId).update({'images': _imagesNetwork});
 
-    // Update the imageUrls list
     setState(() {
       _imagesNetwork.remove(url);
     });
@@ -160,94 +190,94 @@ class _EditDiaryState extends State<EditDiary> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-   padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-       
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        bottomNavigationBar: BottomAppBar(child:  Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    QuillToolbar.simple(
-                      configurations: QuillSimpleToolbarConfigurations(
-                        showDividers: false,
-                        showFontFamily: false,
-                        showFontSize: false,
-                        showBoldButton: true,
-                        showItalicButton: true,
-                        showSmallButton: false,
-                        showUnderLineButton: false,
-                        showStrikeThrough: false,
-                        showInlineCode: false,
-                        showColorButton: false,
-                        showBackgroundColorButton: false,
-                        showClearFormat: false,
-                        showAlignmentButtons: true,
-                        showLeftAlignment: false,
-                        showCenterAlignment: false,
-                        showRightAlignment: false,
-                        showJustifyAlignment: false,
-                        showHeaderStyle: false,
-                        showListNumbers: false,
-                        showListBullets: false,
-                        showListCheck: false,
-                        showCodeBlock: false,
-                        showQuote: false,
-                        showIndent: false,
-                        showLink: false,
-                        showUndo: true,
-                        showRedo: true,
-                        showDirection: false,
-                        showSearchButton: false,
-                        showSubscript: false,
-                        showSuperscript: false,
-                        showClipboardCopy: false,
-                        showClipboardCut: false,
-                        showClipboardPaste: false,
-                        controller: quillController,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: 
-                              _imagesFile.length + _imagesNetwork.length >= 6
-                                  ? null
-                                  : () async {
-                                      await pickImages();
-                                    },
-                          icon: const Icon(PhosphorIcons.image_bold),
-                        ),
-                        OutlinedButton(
-                          onPressed: () {
-                            showDatePicker(
-                              context: context,
-                              initialDate: userSelectedDate,
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                            ).then((newDate) {
-                              if (newDate != null) {
-                                setState(() {
-                                  userSelectedDate = newDate;
-                                });
-                              }
-                            });
+        bottomNavigationBar: BottomAppBar(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              QuillToolbar.simple(
+                configurations: QuillSimpleToolbarConfigurations(
+                  showDividers: false,
+                  showFontFamily: false,
+                  showFontSize: false,
+                  showBoldButton: true,
+                  showItalicButton: true,
+                  showSmallButton: false,
+                  showUnderLineButton: false,
+                  showStrikeThrough: false,
+                  showInlineCode: false,
+                  showColorButton: false,
+                  showBackgroundColorButton: false,
+                  showClearFormat: false,
+                  showAlignmentButtons: true,
+                  showLeftAlignment: false,
+                  showCenterAlignment: false,
+                  showRightAlignment: false,
+                  showJustifyAlignment: false,
+                  showHeaderStyle: false,
+                  showListNumbers: false,
+                  showListBullets: false,
+                  showListCheck: false,
+                  showCodeBlock: false,
+                  showQuote: false,
+                  showIndent: false,
+                  showLink: false,
+                  showUndo: true,
+                  showRedo: true,
+                  showDirection: false,
+                  showSearchButton: false,
+                  showSubscript: false,
+                  showSuperscript: false,
+                  showClipboardCopy: false,
+                  showClipboardCut: false,
+                  showClipboardPaste: false,
+                  controller: quillController,
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: _imagesFile.length + _imagesNetwork.length >= 6
+                        ? null
+                        : () async {
+                            await pickImages();
                           },
-                          child: Row(
-                            children: [
-                              Text(
-                                userSelectedDate != null
-                                    ? DateFormat('dd-MM-yyyy')
-                                        .format(userSelectedDate)
-                                    : DateFormat('dd-MM-yyyy')
-                                        .format(DateTime.now()),
-                              ),
-                            ],
-                          ),
+                    icon: const Icon(PhosphorIcons.image_bold),
+                  ),
+                  OutlinedButton(
+                    onPressed: () {
+                      showDatePicker(
+                        context: context,
+                        initialDate: userSelectedDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      ).then((newDate) {
+                        if (newDate != null) {
+                          setState(() {
+                            userSelectedDate = newDate;
+                          });
+                        }
+                      });
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          userSelectedDate != null
+                              ? DateFormat('dd-MM-yyyy')
+                                  .format(userSelectedDate)
+                              : DateFormat('dd-MM-yyyy').format(DateTime.now()),
                         ),
                       ],
                     ),
-                  ],
-                ),),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(PhosphorIcons.x),
@@ -280,19 +310,20 @@ class _EditDiaryState extends State<EditDiary> {
                   firebase_storage.Reference storageRef =
                       storage.ref('/$uid/${widget.id}');
                   List<String> imageUrls = [];
-      
+
                   // Upload new images and get their URLs
                   for (var image in _imagesFile) {
                     firebase_storage.UploadTask task =
                         storageRef.child(image.path).putFile(image);
                     await task.whenComplete(() {});
-                    String downloadUrl = await task.snapshot.ref.getDownloadURL();
+                    String downloadUrl =
+                        await task.snapshot.ref.getDownloadURL();
                     imageUrls.add(downloadUrl);
                   }
-      
+
                   // Combine new and existing URLs
                   imageUrls.addAll(_imagesNetwork);
-      
+
                   final delta = quillController.document.toDelta();
                   final jsonString = jsonEncode(delta.toJson());
                   ref.child(widgetId).update({
@@ -302,7 +333,7 @@ class _EditDiaryState extends State<EditDiary> {
                     'date': userSelectedDate.toString(),
                     'images': imageUrls,
                   });
-      
+
                   setState(() {
                     _imagesNetwork =
                         imageUrls; // Update the _imagesNetwork list with new URLs
@@ -310,7 +341,7 @@ class _EditDiaryState extends State<EditDiary> {
                         .clear(); // Clear the _imagesFile list after upload
                     isLoading = false;
                   });
-      
+
                   _focusNode.unfocus();
                   Navigator.pop(context);
                 }
@@ -319,11 +350,12 @@ class _EditDiaryState extends State<EditDiary> {
           ],
           title: Text(
             "Edit !",
-            style: GoogleFonts.cedarvilleCursive(
+            style: GoogleFonts.silkscreen(
               fontWeight: FontWeight.bold,
             ),
           ),
           toolbarHeight: 50,
+          centerTitle: true,
         ),
         body: Padding(
           padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
@@ -337,21 +369,22 @@ class _EditDiaryState extends State<EditDiary> {
                       EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
                   child: Center(
                     child: TextFormField(
-                      maxLines: 1,
+                      maxLines: maxLines,
                       maxLength: 60,
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: GoogleFonts.silkscreen(
+                        fontSize: _titleFontSize,
+                        fontWeight: FontWeight.bold,
+                      ),
                       controller: titleController,
-                      decoration: const InputDecoration(
-                        hintText: 'Title',
+                      decoration:  InputDecoration(
+                         counterStyle: GoogleFonts.silkscreen(),
+                        hintText: "What happened today?",
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                       ),
                     ),
                   ),
                 ),
-               
                 const SizedBox(height: 20),
                 _buildImageGallery(),
                 const SizedBox(height: 34),
