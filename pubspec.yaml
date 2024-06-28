@@ -58,15 +58,15 @@ dependencies:
   adaptive_theme:
   animate_do:
   page_transition:
-  path_provider: 
-  reorderable_grid_view: ^2.2.8
-  shared_preferences: 
+
   staggered_grid_view_flutter: 
   confetti: ^0.7.0
   vibration: ^1.9.0
   flutter_signin_button:
   flutter_onboarding_slider: ^1.0.11
   encrypt: ^5.0.3
+  crypto: 
+  debounce_throttle: ^2.0.0
   
 dev_dependencies:
   flutter_lints: 

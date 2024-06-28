@@ -15,6 +15,7 @@ import 'package:page_transition/page_transition.dart';
 
 import '../../main.dart';
 import '../../models/userData.dart';
+import '../../services/exncryption_and_decryption.dart';
 import '../../services/realtime_database.dart';
 
 class EditDiary extends StatefulWidget {
@@ -52,6 +53,7 @@ class _EditDiaryState extends State<EditDiary> {
   @override
   void initState() {
     super.initState();
+    EncryptionService encryptionService = EncryptionService(uid!);
 
     _imagesNetwork = List<String>.from(widget.images);
     userSelectedDate = DateTime.parse(widget.date);
@@ -60,7 +62,11 @@ class _EditDiaryState extends State<EditDiary> {
 
     try {
       final trimmedJson = widget.entry.trim().replaceAll('\u00A0', ' ');
-      final decodedData = jsonDecode(trimmedJson);
+
+      // Decrypt the entry retrieved from Firebase
+      final decryptedData = encryptionService.decryptText(trimmedJson);
+
+      final decodedData = jsonDecode(decryptedData);
       final doc = Document.fromJson(decodedData);
       quillController = QuillController(
         document: doc,
@@ -73,14 +79,12 @@ class _EditDiaryState extends State<EditDiary> {
     quillController.addListener(() {
       final delta = quillController.document.toDelta();
       final jsonString = jsonEncode(delta.toJson());
-      ref.child(widgetId).update({
-        'entry': jsonString,
-      });
-    });
 
-    titleController.addListener(() {
+      // Encrypt the entry before saving to Firebase
+      final encryptedEntry = encryptionService.encryptText(jsonString);
+
       ref.child(widgetId).update({
-        'title': titleController.text,
+        'entry': encryptedEntry,
       });
     });
     titleController.addListener(_updateMaxLines);
@@ -376,8 +380,8 @@ class _EditDiaryState extends State<EditDiary> {
                         fontWeight: FontWeight.bold,
                       ),
                       controller: titleController,
-                      decoration:  InputDecoration(
-                         counterStyle: GoogleFonts.silkscreen(),
+                      decoration: InputDecoration(
+                        counterStyle: GoogleFonts.silkscreen(),
                         hintText: "What happened today?",
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,

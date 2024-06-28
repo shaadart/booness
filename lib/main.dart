@@ -12,7 +12,6 @@ import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';
 import 'pages/DairyUi.dart';
-import 'pages/Set up and sign up/onboardoing.dart';
 import 'pages/Write and Edit/writeDiary.dart';
 import 'pages/settings/setting_page.dart';
 
@@ -47,8 +46,9 @@ Future<void> main() async {
 
   runApp(MaterialApp(
       // debugShowCheckedModeBanner: false,
-      // home: MyApp()
-      home: currentUser != null ? const MyApp() : OnBoardingScreen()));
+      home: MyApp()
+      // home: currentUser != null ? const MyApp() : OnBoardingScreen()
+      ));
 }
 
 final currentUser = FirebaseAuth.instance.currentUser;
@@ -72,7 +72,9 @@ class _MyAppState extends State<MyApp> {
               title: 'Flutter Demo',
               theme: theme,
 
-              home: const OnBoardingScreen(),
+              home: const HomeScreen(
+                title: '',
+              ),
               //  home: const HomeScreen(title: 'Daily Goodness'),
             ));
   }

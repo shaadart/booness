@@ -178,7 +178,7 @@ packages:
     source: hosted
     version: "0.3.4+1"
   crypto:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: crypto
       sha256: ff625774173754681d66daaf4a448684fb04b78f902da9cb3d308c19cc5e8bab
@@ -225,6 +225,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.3.20"
+  debounce_throttle:
+    dependency: "direct main"
+    description:
+      name: debounce_throttle
+      sha256: c95cf47afda975fc507794a52040a16756fb2f31ad3027d4e691c41862ff5692
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   device_info_plus:
     dependency: transitive
     description:
@@ -934,7 +942,7 @@ packages:
     source: hosted
     version: "1.9.0"
   path_provider:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: path_provider
       sha256: c9e7d3a4cd1410877472158bee69963a4579f78b68c65a2b7d40d1a7a88bb161
@@ -1037,14 +1045,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.1"
-  reorderable_grid_view:
-    dependency: "direct main"
-    description:
-      name: reorderable_grid_view
-      sha256: e36c6229a97105a10c79e15ab4b9b14ee9f6c488574ff2be9e858c82af47cda6
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.8"
   rxdart:
     dependency: transitive
     description:
@@ -1054,7 +1054,7 @@ packages:
     source: hosted
     version: "0.27.7"
   shared_preferences:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: shared_preferences
       sha256: d3bbe5553a986e83980916ded2f0b435ef2e1893dfaa29d5a7a790d0eca12180
@@ -1109,6 +1109,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
+  simple_observable:
+    dependency: transitive
+    description:
+      name: simple_observable
+      sha256: b392795c48f8b5f301b4c8f73e15f56e38fe70f42278c649d8325e859a783301
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   sky_engine:
     dependency: transitive
     description: flutter

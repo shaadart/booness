@@ -18,9 +18,10 @@ import 'package:page_transition/page_transition.dart';
 import '../../main.dart';
 import '../../models/diaryentry.dart';
 import '../../models/userData.dart';
+import '../../services/exncryption_and_decryption.dart';
 
 DateTime now = DateTime.now();
-late ConfettiController controllerBottomCenter;
+late ConfettiController confettiController;
 DateTime date = DateTime(now.year, now.month, now.day);
 List<DiaryEntry> diaryEntries = []; // List of diary entries
 var userSelectedDate = DateTime.now();
@@ -37,6 +38,7 @@ class _WriteDiaryState extends State<WriteDiary> {
   TextEditingController titleController = TextEditingController();
   QuillController quillController = QuillController.basic();
   final picker = ImagePicker();
+  late EncryptionService encryptionService;
 
   List<File> _images = []; // List to store picked images
   bool isLoading = false;
@@ -91,7 +93,7 @@ class _WriteDiaryState extends State<WriteDiary> {
     super.initState();
     titleController.addListener(_updateMaxLines);
     titleController.addListener(_adjustFontSize);
-    // Initialize streak operations when the screen loads
+    encryptionService = EncryptionService(uid!);
   }
 
   void _updateMaxLines() {
@@ -147,11 +149,15 @@ class _WriteDiaryState extends State<WriteDiary> {
       final delta = quillController.document.toDelta();
       final jsonString = jsonEncode(delta.toJson());
 
+      // Encrypt the title and entry before saving
+      String encryptedTitle =
+          encryptionService.encryptText(titleController.text);
+      String encryptedEntry = encryptionService.encryptText(jsonString);
       // Save diary entry to Firebase
       await ref.child(id).set({
         'id': id,
-        'title': titleController.text,
-        'entry': jsonString,
+        'title': encryptedTitle,
+        'entry': encryptedEntry,
         'date': userSelectedDate.toString(),
         'images': imageUrls,
         'image_position': [110, 164]
@@ -169,7 +175,7 @@ class _WriteDiaryState extends State<WriteDiary> {
         'lastUpdated': DateTime.now().toString(),
       });
 
-      controllerBottomCenter.play();
+      confettiController.play();
       Navigator.of(context).pop(true);
     } catch (e) {
       print('Error saving diary entry: $e');
@@ -180,9 +186,6 @@ class _WriteDiaryState extends State<WriteDiary> {
       });
     }
   }
-
-
-
 
   int calculateDateDifference(DateTime todayDate, DateTime lastDate) {
     Duration difference =

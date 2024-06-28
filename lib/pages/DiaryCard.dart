@@ -7,9 +7,13 @@ import 'package:highlightable/highlightable.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:page_transition/page_transition.dart';
-import 'package:vibration/vibration.dart'; // Import the vibration package
+import 'package:vibration/vibration.dart';
+import 'package:encrypt/encrypt.dart';
+import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
 
 import '../models/userData.dart';
+import '../services/exncryption_and_decryption.dart';
 import '../services/realtime_database.dart';
 import 'DairyUi.dart';
 import 'Write and Edit/editDiary.dart';
@@ -38,14 +42,41 @@ class _DiaryCardState extends State<DiaryCard> {
   late Map<int, Offset> imageOffsets;
   late double leftPosition = 0.0;
   late double topPosition = 0.0;
+  late String decryptedTitle = ''; // Initialize with empty string
+  late String decryptedEntry = ''; // Initialize with empty string
 
   @override
   void initState() {
     super.initState();
-    // Initialize offsets for each image
     imageOffsets = {};
     for (int i = 0; i < widget.imageUrls.length; i++) {
-      imageOffsets[i] = Offset(20.0 * i, 0.0); // Initial offsets set to (0, 0)
+      imageOffsets[i] = Offset(20.0 * i, 0.0);
+    }
+    _decryptData();
+  }
+
+  void _decryptData() {
+    try {
+      EncryptionService encryptionService = EncryptionService(uid!);
+      String decryptedTitleTemp = encryptionService.decryptText(widget.title);
+      String decryptedEntryTemp = encryptionService.decryptText(widget.entry);
+
+      // Print statements for debugging
+      print("This is the widget.title: ${widget.title}");
+      print("This is the decrypted title: $decryptedTitleTemp");
+      print("This is the widget.entry: ${widget.entry}");
+      print("This is the decrypted entry: $decryptedEntryTemp");
+
+      setState(() {
+        decryptedTitle = decryptedTitleTemp; // Update decryptedTitle
+        decryptedEntry = decryptedEntryTemp; // Update decryptedEntry
+      });
+    } catch (e) {
+      print("Decryption error: $e");
+      setState(() {
+        decryptedTitle = "Text Decryption Error";
+        decryptedEntry = "Text Decryption Error";
+      });
     }
   }
 
@@ -93,9 +124,8 @@ class _DiaryCardState extends State<DiaryCard> {
               'image_position': [dx, dy],
             });
           });
-          // Trigger a small vibration when the image position is updated
           if (await Vibration.hasVibrator() ?? false) {
-            Vibration.vibrate(duration: 50); // 50 milliseconds vibration
+            Vibration.vibrate(duration: 50);
           }
         },
         feedback: imageUrl == "404"
@@ -107,8 +137,6 @@ class _DiaryCardState extends State<DiaryCard> {
               ),
         childWhenDragging: Container(),
         child: imageUrl == "404"
-        
-
             ? Container()
             : Image.network(
                 imageUrl,
@@ -122,27 +150,33 @@ class _DiaryCardState extends State<DiaryCard> {
   @override
   Widget build(BuildContext context) {
     final formattedDate = formatDate(widget.date);
-    final document =
-        Document.fromDelta(Delta.fromJson(jsonDecode(widget.entry)));
-    final plainText = document.toPlainText();
-
+    try {
+      final document =
+          Document.fromDelta(Delta.fromJson(jsonDecode(decryptedEntry)));
+      final plainText = document.toPlainText();
+      decryptedEntry = plainText; // Update the decryptedEntry to plainText
+    } catch (e) {
+      print("Error parsing decrypted entry: $e");
+    }
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          PageTransition(
-            curve: Curves.fastLinearToSlowEaseIn,
-            duration: const Duration(milliseconds: 200),
-            type: PageTransitionType.leftToRight,
-            child: EditDiary(
-              title: widget.title,
-              entry: widget.entry,
-              date: DateTime.parse(widget.date).toString(),
-              id: widget.id,
-              images: widget.imageUrls.isEmpty ? ["404"] : widget.imageUrls,
+        setState(() {
+          Navigator.push(
+            context,
+            PageTransition(
+              curve: Curves.fastLinearToSlowEaseIn,
+              duration: const Duration(milliseconds: 200),
+              type: PageTransitionType.leftToRight,
+              child: EditDiary(
+                title: decryptedTitle,
+                entry: decryptedEntry,
+                date: DateTime.parse(widget.date).toString(),
+                id: widget.id,
+                images: widget.imageUrls.isEmpty ? ["404"] : widget.imageUrls,
+              ),
             ),
-          ),
-        );
+          );
+        });
       },
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -162,7 +196,7 @@ class _DiaryCardState extends State<DiaryCard> {
                       children: [
                         ListTile(
                           title: HighlightText(
-                            widget.title,
+                            decryptedTitle,
                             highlight: Highlight(
                               words: searchController.text.isNotEmpty
                                   ? searchController.text.split(' ')
@@ -183,9 +217,9 @@ class _DiaryCardState extends State<DiaryCard> {
                         ),
                         ListTile(
                           subtitle: HighlightText(
-                            plainText.length > 144
-                                ? plainText.substring(0, 89) + ' ... '
-                                : plainText,
+                            decryptedEntry.length > 144
+                                ? decryptedEntry.substring(0, 89) + ' ... '
+                                : decryptedEntry,
                             highlight: Highlight(
                               words: searchController.text.isNotEmpty
                                   ? searchController.text.split(' ')

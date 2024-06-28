@@ -12,7 +12,6 @@ import 'Stats/stats.dart';
 import 'Write and Edit/writeDiary.dart';
 import 'DiaryCard.dart';
 
-
 TextEditingController searchController = TextEditingController();
 
 class DiaryUI extends StatefulWidget {
@@ -50,7 +49,7 @@ class _DiaryUIState extends State<DiaryUI> {
   void initState() {
     super.initState();
     searchController.addListener(_onSearchChanged);
-    controllerBottomCenter =
+    confettiController =
         ConfettiController(duration: const Duration(seconds: 10));
   }
 
@@ -62,7 +61,7 @@ class _DiaryUIState extends State<DiaryUI> {
 
   @override
   void dispose() {
-    controllerBottomCenter.dispose();
+    confettiController.dispose();
     searchController.removeListener(_onSearchChanged);
     searchController.dispose();
     super.dispose();
@@ -71,7 +70,7 @@ class _DiaryUIState extends State<DiaryUI> {
   @override
   Widget build(BuildContext context) {
     return ConfettiWidget(
-      confettiController: controllerBottomCenter,
+      confettiController: confettiController,
       blastDirectionality: BlastDirectionality.explosive,
       shouldLoop: false,
       colors: const [
@@ -178,8 +177,8 @@ class _DiaryUIState extends State<DiaryUI> {
                               itemBuilder: (context, entryIndex) {
                                 return GestureDetector(
                                   onDoubleTap: () async {
-                                    if (controllerBottomCenter.hasListeners) {
-                                      controllerBottomCenter.play();
+                                    if (confettiController.hasListeners) {
+                                      confettiController.play();
                                     }
                                   },
                                   child: DiaryCard(
