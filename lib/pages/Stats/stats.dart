@@ -18,13 +18,13 @@ class _StatsState extends State<Stats> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-          top: MediaQuery.of(context).size.width * 0.03,
-          bottom: MediaQuery.of(context).size.width * 0.03),
+          top: MediaQuery.of(context).size.shortestSide * 0.03,
+          bottom: MediaQuery.of(context).size.shortestSide * 0.03),
       child: BannerCarousel(
         animation: true,
         showIndicator: true,
         customizedBanners: [
-         // MySliderScreen(),
+          // MySliderScreen(),
           const Streaks(),
           const YourLives(),
         ],

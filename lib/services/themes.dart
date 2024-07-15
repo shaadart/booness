@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 ThemeData lightTheme() {
   print("objectifying Theme...");
   return ThemeData(
+    fontFamily: GoogleFonts.workSans().fontFamily,
     colorScheme: ColorScheme.fromSeed(
       seedColor: Color(0xFF334EAC), // Royal
       brightness: Brightness.light,
@@ -51,9 +52,9 @@ ThemeData lightTheme() {
 ThemeData darkTheme() {
   print("objectifying Theme...");
   return ThemeData(
-    fontFamily: GoogleFonts.uchen().fontFamily,
+    fontFamily: GoogleFonts.workSans().fontFamily,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: Color(0xFFBAD6EB), // Muted Sky, base of dark theme
+      seedColor: Color.fromARGB(255, 0, 145, 255), // Muted Sky, base of dark theme
       brightness: Brightness.dark,
       primary: Color(0xFF7096D1), // China (slightly muted in darkness)
       secondary: Color(0xFF334EAC), // Royal (contrasting accent)
@@ -86,3 +87,5 @@ ThemeData darkTheme() {
     ),
   );
 }
+
+

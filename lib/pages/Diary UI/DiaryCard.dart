@@ -1,3 +1,4 @@
+import 'package:booness/pages/Read%20Write%20Edit/readDiary.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -7,12 +8,12 @@ import 'package:highlightable/highlightable.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:page_transition/page_transition.dart';
-import 'package:vibration/vibration.dart'; // Import the vibration package
+import 'package:vibration/vibration.dart';
 
-import '../models/userData.dart';
-import '../services/realtime_database.dart';
-import 'DairyUi.dart';
-import 'Write and Edit/editDiary.dart';
+import '../../models/userData.dart';
+import '../../services/realtime_database.dart';
+import '../Read Write Edit/editDiary.dart';
+import 'DairyUi.dart'; // Import the vibration package
 
 class DiaryCard extends StatefulWidget {
   final String entry;
@@ -81,8 +82,8 @@ class _DiaryCardState extends State<DiaryCard> {
             RenderBox box = context.findRenderObject() as RenderBox;
             Offset localOffset = box.globalToLocal(details.offset);
 
-            double maxDx = box.size.width - 55.0 + 25.0;
-            double maxDy = box.size.height - 55.0 + 25;
+            double maxDx = box.size.shortestSide - 55.0 + 25.0;
+            double maxDy = box.size.longestSide - 55.0 + 25;
 
             double dx = localOffset.dx.clamp(-10.0, maxDx);
             double dy = localOffset.dy.clamp(-10.0, maxDy);
@@ -107,8 +108,6 @@ class _DiaryCardState extends State<DiaryCard> {
               ),
         childWhenDragging: Container(),
         child: imageUrl == "404"
-        
-
             ? Container()
             : Image.network(
                 imageUrl,
@@ -133,8 +132,8 @@ class _DiaryCardState extends State<DiaryCard> {
           PageTransition(
             curve: Curves.fastLinearToSlowEaseIn,
             duration: const Duration(milliseconds: 200),
-            type: PageTransitionType.leftToRight,
-            child: EditDiary(
+            type: PageTransitionType.bottomToTop,
+            child: ReadDiary(
               title: widget.title,
               entry: widget.entry,
               date: DateTime.parse(widget.date).toString(),
@@ -182,29 +181,31 @@ class _DiaryCardState extends State<DiaryCard> {
                           ),
                         ),
                         ListTile(
-                          subtitle: HighlightText(
-                            plainText.length > 144
-                                ? plainText.substring(0, 89) + ' ... '
-                                : plainText,
-                            highlight: Highlight(
-                              words: searchController.text.isNotEmpty
-                                  ? searchController.text.split(' ')
-                                  : [],
-                            ),
-                            caseSensitive: false,
-                            detectWords: true,
-                            highlightStyle: GoogleFonts.silkscreen(
-                              color: Theme.of(context)
-                                  .indicatorColor
-                                  .withGreen(144),
-                            ),
-                            style: GoogleFonts.enriqueta(),
-                          ),
-                        ),
-                        ListTile(
-                          subtitle: Text(
-                            formattedDate,
-                            style: GoogleFonts.silkscreen(fontSize: 8),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              HighlightText(
+                                plainText.length > 144
+                                    ? plainText.substring(0, 89) + ' ... '
+                                    : plainText,
+                                highlight: Highlight(
+                                  words: searchController.text.isNotEmpty
+                                      ? searchController.text.split(' ')
+                                      : [],
+                                ),
+                                caseSensitive: false,
+                                detectWords: true,
+                                highlightStyle: GoogleFonts.silkscreen(
+                                  color: Theme.of(context)
+                                      .indicatorColor
+                                      .withGreen(144),
+                                ),
+                              ),
+                              Text(
+                                formattedDate,
+                                style: GoogleFonts.silkscreen(fontSize: 8),
+                              ),
+                            ],
                           ),
                         ),
                       ],

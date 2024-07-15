@@ -16,6 +16,32 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
       FirebaseDatabase.instance.reference().child('usernames');
 
   bool isUsernameAvailable = true;
+  bool isChecking = false;
+  String? errorMessage;
+
+  Future<void> checkUsernameAvailability(String username) async {
+    setState(() {
+      isChecking = true;
+      errorMessage = null;
+    });
+
+    final DataSnapshot snapshot = (await usernamesRef.once()) as DataSnapshot;
+    final Map<dynamic, dynamic> usernames =
+        snapshot.value as Map<dynamic, dynamic>;
+
+    setState(() {
+      isUsernameAvailable = !usernames.containsValue(username);
+      isChecking = false;
+      if (!isUsernameAvailable) {
+        errorMessage =
+            'Username is not available. Please choose another username.';
+      }
+    });
+  }
+
+  Future<void> saveUsername(String username) async {
+    await usernamesRef.push().set(username);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,34 +58,48 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
               decoration: InputDecoration(
                 labelText: 'Username',
               ),
+              onChanged: (value) {
+                if (!isChecking && errorMessage != null) {
+                  setState(() {
+                    errorMessage = null;
+                  });
+                }
+              },
             ),
             SizedBox(height: 16.0),
             ElevatedButton(
               onPressed: () {
-                final String username = _usernameController.text.trim();
-                if (username.isNotEmpty) {
-                  usernamesRef.once().then((DataSnapshot snapshot) {
-                        Object? usernames = snapshot.value;
-                        if ((usernames as Map<dynamic, dynamic>)
-                            .containsValue(username)) {
-                          setState(() {
-                            isUsernameAvailable = false;
-                          });
-                        } else {
-                          usernamesRef.push().set(username);
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => MyApp()));
-                          // Add any additional logic here
-                        }
-                      } as FutureOr Function(DatabaseEvent value));
-                }
+                Navigator.pushReplacement(
+                    context, MaterialPageRoute(builder: (context) => MyApp()));
               },
-              child: Text('Save'),
+              // isChecking
+              //     ? null
+              //     : () async {
+              //         final String username = _usernameController.text.trim();
+              //         if (username.isNotEmpty) {
+              //           await checkUsernameAvailability(username);
+              //           if (isUsernameAvailable) {
+              //             await saveUsername(username);
+              //             Navigator.pushReplacement(
+              //               context,
+              //               MaterialPageRoute(builder: (context) => MyApp()),
+              //             );
+              //           }
+              //         }
+              //       },
+              child: isChecking
+                  ? CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    )
+                  : Text('Save'),
             ),
-            if (!isUsernameAvailable)
-              Text(
-                'Username is not available. Please choose another username.',
-                style: TextStyle(color: Colors.red),
+            if (errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: Text(
+                  errorMessage!,
+                  style: TextStyle(color: Colors.red),
+                ),
               ),
           ],
         ),

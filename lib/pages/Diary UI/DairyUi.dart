@@ -1,5 +1,5 @@
 import 'dart:collection';
-
+import 'dart:ui';
 import 'package:booness/services/realtime_database.dart';
 import 'package:confetti/confetti.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -8,10 +8,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_grid_view.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_tile.dart';
-import 'Stats/stats.dart';
-import 'Write and Edit/writeDiary.dart';
+import '../../services/exncryption_and_decryption.dart';
+import '../Stats/stats.dart';
+import '../Read Write Edit/writeDiary.dart';
 import 'DiaryCard.dart';
-
 
 TextEditingController searchController = TextEditingController();
 
@@ -24,6 +24,28 @@ class DiaryUI extends StatefulWidget {
 
 class _DiaryUIState extends State<DiaryUI> {
   String currentMonthYear = DateFormat('yyyy-MM').format(DateTime.now());
+
+  @override
+  void initState() {
+    super.initState();
+    searchController.addListener(_onSearchChanged);
+    confettiController =
+        ConfettiController(duration: const Duration(seconds: 10));
+  }
+
+  @override
+  void dispose() {
+    confettiController.dispose();
+    searchController.removeListener(_onSearchChanged);
+    searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   Map<String, List<dynamic>> _groupByMonth(List<dynamic> entries) {
     SplayTreeMap<String, List<dynamic>> groupedEntries =
@@ -46,32 +68,60 @@ class _DiaryUIState extends State<DiaryUI> {
     return groupedEntries;
   }
 
-  @override
-  void initState() {
-    super.initState();
-    searchController.addListener(_onSearchChanged);
-    controllerBottomCenter =
-        ConfettiController(duration: const Duration(seconds: 10));
+  Map<String, List<dynamic>> _decryptEntries(Map<dynamic, dynamic> entries) {
+    Map<String, List<dynamic>> decryptedEntries = {};
+
+    entries.forEach((key, value) {
+      List<dynamic> decryptedList = value.map((entry) {
+        String decryptedTitle = EncryptionService.decryptText(entry['title']);
+        String decryptedEntry = EncryptionService.decryptText(entry['entry']);
+
+        return {
+          'title': decryptedTitle,
+          'entry': decryptedEntry,
+          'date': entry['date'],
+          'id': entry['id'],
+          'images': entry['images']
+        };
+      }).toList();
+
+      decryptedEntries[key] = decryptedList;
+    });
+
+    return decryptedEntries;
   }
 
-  void _onSearchChanged() {
-    if (mounted) {
-      setState(() {});
-    }
+  Map<String, List<dynamic>> _filterEntries(
+      Map<String, List<dynamic>> groupedEntries) {
+    Map<String, List<dynamic>> filteredGroupedEntries = {};
+    String searchText = searchController.text.toLowerCase();
+
+    groupedEntries.forEach((monthYear, entries) {
+      List<dynamic> filteredEntries = entries.where((entry) {
+        // Perform the search on decrypted text
+        bool titleMatches = entry['title'].toLowerCase().contains(searchText);
+        bool entryMatches = entry['entry'].toLowerCase().contains(searchText);
+
+        return titleMatches || entryMatches;
+      }).toList();
+
+      if (filteredEntries.isNotEmpty) {
+        filteredGroupedEntries[monthYear] = filteredEntries;
+      }
+    });
+
+    return filteredGroupedEntries;
   }
 
-  @override
-  void dispose() {
-    controllerBottomCenter.dispose();
-    searchController.removeListener(_onSearchChanged);
-    searchController.dispose();
-    super.dispose();
+  String _formatMonthYear(String monthYearKey) {
+    DateTime date = DateFormat('yyyy-MM').parse(monthYearKey);
+    return '${DateFormat('MMMM').format(date)} ${date.year}';
   }
 
   @override
   Widget build(BuildContext context) {
     return ConfettiWidget(
-      confettiController: controllerBottomCenter,
+      confettiController: confettiController,
       blastDirectionality: BlastDirectionality.explosive,
       shouldLoop: false,
       colors: const [
@@ -104,24 +154,42 @@ class _DiaryUIState extends State<DiaryUI> {
                 ? snapshot.data!.snapshot.value as Map<dynamic, dynamic>
                 : {};
             List<dynamic> list = map.values.toList();
-            Map<String, List<dynamic>> groupedEntries = _groupByMonth(list);
-
-            Map<String, List<dynamic>> filteredGroupedEntries =
-                _filterEntries(groupedEntries);
-
-            if (filteredGroupedEntries.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Stats(),
-                    SizedBox(height: 20),
-                    Text(
-                      "Don't forget your days! \n ever again \t\t\t\t\t\t tap +",
+            
+            if (list.isEmpty) {
+              return const Column(
+                children: [
+                  Stats(),
+                  SizedBox(height: 20),
+                  Center(
+                    child: Text(
+                      "Don't forget your days! \n ever again, tap +",
                       textAlign: TextAlign.center,
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              );
+            }
+
+            Map<String, List<dynamic>> groupedEntries = _groupByMonth(list);
+
+            // Decrypt entries before filtering and displaying
+            Map<String, List<dynamic>> decryptedGroupedEntries =
+                _decryptEntries(groupedEntries);
+            Map<String, List<dynamic>> filteredGroupedEntries =
+                _filterEntries(decryptedGroupedEntries);
+
+            if (filteredGroupedEntries.isEmpty) {
+              return const Column(
+                children: [
+                  Stats(),
+                  SizedBox(height: 20),
+                  Center(
+                    child: Text(
+                      "Don't forget your days! \n ever again, tap +",
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
               );
             }
 
@@ -176,47 +244,33 @@ class _DiaryUIState extends State<DiaryUI> {
                               crossAxisCount: 2,
                               itemCount: monthEntries.length,
                               itemBuilder: (context, entryIndex) {
-                                return GestureDetector(
-                                  onDoubleTap: () async {
-                                    if (controllerBottomCenter.hasListeners) {
-                                      controllerBottomCenter.play();
-                                    }
-                                  },
-                                  child: DiaryCard(
-                                    entry: monthEntries[entryIndex]['entry'],
-                                    title: monthEntries[entryIndex]['title'],
-                                    date: monthEntries[entryIndex]['date']
-                                        .toString()
-                                        .substring(0, 10),
-                                    id: monthEntries[entryIndex]['id'],
-                                    imageUrls: monthEntries[entryIndex]
-                                                    ['images'] ==
-                                                null ||
-                                            monthEntries[entryIndex]['images']
-                                                .isEmpty
-                                        ? []
-                                        : List<String>.from(
-                                            monthEntries[entryIndex]['images']),
-                                  ),
+                                return DiaryCard(
+                                  entry: monthEntries[entryIndex]['entry'],
+                                  title: monthEntries[entryIndex]['title'],
+                                  date: monthEntries[entryIndex]['date']
+                                      .toString()
+                                      .substring(0, 10),
+                                  id: monthEntries[entryIndex]['id'],
+                                  imageUrls: monthEntries[entryIndex]
+                                                  ['images'] ==
+                                              null ||
+                                          monthEntries[entryIndex]['images']
+                                              .isEmpty
+                                      ? []
+                                      : List<String>.from(
+                                          monthEntries[entryIndex]['images']),
                                 );
                               },
-                              staggeredTileBuilder: (int index) =>
+                              staggeredTileBuilder: (index) =>
                                   const StaggeredTile.fit(1),
+                              mainAxisSpacing: 8.0,
+                              crossAxisSpacing: 8.0,
                             ),
                           ),
                         ],
                       );
                     },
-                    childCount: filteredGroupedEntries.length,
-                  ),
-                ),
-                const SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      Text(" "),
-                      Text(" "),
-                      Text(" "),
-                    ],
+                    childCount: filteredGroupedEntries.keys.length,
                   ),
                 ),
               ],
@@ -225,27 +279,5 @@ class _DiaryUIState extends State<DiaryUI> {
         ),
       ),
     );
-  }
-
-  Map<String, List<dynamic>> _filterEntries(
-      Map<String, List<dynamic>> groupedEntries) {
-    Map<String, List<dynamic>> filteredGroupedEntries = {};
-    String searchText = searchController.text.toLowerCase();
-    groupedEntries.forEach((monthYear, entries) {
-      List<dynamic> filteredEntries = entries.where((entry) {
-        return entry['title'].toLowerCase().contains(searchText) ||
-            entry['entry'].toLowerCase().contains(searchText);
-      }).toList();
-
-      if (filteredEntries.isNotEmpty) {
-        filteredGroupedEntries[monthYear] = filteredEntries;
-      }
-    });
-    return filteredGroupedEntries;
-  }
-
-  String _formatMonthYear(String monthYearKey) {
-    DateTime date = DateFormat('yyyy-MM').parse(monthYearKey);
-    return '${DateFormat('MMMM').format(date)} ${date.year}';
   }
 }
