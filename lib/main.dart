@@ -8,11 +8,13 @@ import 'package:booness/services/themes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';
-import 'pages/DairyUi.dart';
-import 'pages/Write and Edit/writeDiary.dart';
+import 'pages/Diary UI/DairyUi.dart';
+import 'pages/Set up and sign up/onboardoing.dart';
+import 'pages/Read Write Edit/writeDiary.dart';
 import 'pages/settings/setting_page.dart';
 
 Future<void> main() async {
@@ -20,35 +22,28 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
   AwesomeNotifications().initialize(
-      // set the icon to null if you want to use the default app icon
-      null,
-      [
-        NotificationChannel(
-            channelKey: 'daily_reminders',
-            channelName: 'Basic notifications',
-            channelDescription:
-                'Notifications for the Daily Reminders to write the Diary',
-            defaultColor: Color(0xFF9D50DD),
-            channelShowBadge: true,
-            importance: NotificationImportance.High,
-            ledColor: Colors.white)
-      ],
-      // Channel groups are only visual and are not required
-      channelGroups: [
-        NotificationChannelGroup(
-            channelGroupKey: 'daily_reminders',
-            channelGroupName: 'Daily Reminder')
-      ],
-      debug: true);
-  await checkAndRenewLives();
+    null,
+    [
+      NotificationChannel(
+        channelKey: 'daily_reminders',
+        channelName: 'Daily Reminders',
+        channelDescription:
+            'Notifications for the Daily Reminders to write the Diary',
+        defaultColor: const Color(0xFF9D50DD),
+        channelShowBadge: true,
+        importance: NotificationImportance.High,
+        ledColor: Colors.white,
+      ),
+    ],
+    debug: false,
+  );
 
-  runApp(MaterialApp(
-      // debugShowCheckedModeBanner: false,
-      home: MyApp()
-      // home: currentUser != null ? const MyApp() : OnBoardingScreen()
-      ));
+  currentUser == null ? print("uid is null") : checkAndRenewLives();
+  // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: []);
+  // SystemChrome.setPreferredOrientations(
+  //     [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+  runApp(const MaterialApp(home: MyApp()));
 }
 
 final currentUser = FirebaseAuth.instance.currentUser;
@@ -66,16 +61,17 @@ class _MyAppState extends State<MyApp> {
     return AdaptiveTheme(
         light: lightTheme(),
         dark: darkTheme(),
-        initial: AdaptiveThemeMode.dark,
+        initial: AdaptiveThemeMode.light,
         builder: (theme, darkTheme) => MaterialApp(
-              debugShowCheckedModeBanner: false,
-              title: 'Flutter Demo',
-              theme: theme,
-
-              home: const HomeScreen(
-                title: '',
-              ),
-              //  home: const HomeScreen(title: 'Daily Goodness'),
+            debugShowCheckedModeBanner: false,
+            title: 'Flutter Demo',
+            theme: theme,
+            home: currentUser == null
+                ? OnBoardingScreen(
+                    onFinish: () {},
+                  )
+                : const HomeScreen(title: 'Daily Goodness')
+            // home: const HomeScreen(title: 'Daily Goodness'),
             ));
   }
 }
@@ -111,16 +107,14 @@ class _HomeScreenState extends State<HomeScreen> {
           fontWeight: FontWeight.bold,
         ),
         searchInputDecoration: InputDecoration(
-          hintText: "Search Diary",
+          hintText: "Search Your Diary",
           hintStyle: GoogleFonts.silkscreen(),
           border: InputBorder.none,
         ),
         closeSearchIcon: PhosphorIcons.x,
         clearSearchIcon: PhosphorIcons.x,
         onChanged: (text) {
-          setState(() {
-            print(text);
-          });
+          setState(() {});
         },
         onCleared: () {
           setState(() {
@@ -130,9 +124,11 @@ class _HomeScreenState extends State<HomeScreen> {
         clearOnClose: true,
         closeOnSubmit: false,
         onClosed: () {
-          setState(() {
-            searchController.clear();
-          });
+          if (mounted) {
+            setState(() {
+              searchController.clear();
+            });
+          }
         },
         appBarBuilder: (context) {
           return AppBar(
@@ -141,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Padding(
                   padding: EdgeInsets.only(
-                      left: MediaQuery.of(context).size.width * 0.03),
+                      left: MediaQuery.of(context).size.shortestSide * 0.03),
                   child: GestureDetector(
                     onTap: () => Navigator.push(
                         context,
@@ -149,16 +145,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           curve: Curves.fastEaseInToSlowEaseOut,
                           duration: const Duration(milliseconds: 200),
                           type: PageTransitionType.leftToRight,
-                          child: SettingPage(),
+                          child: SettingsPage(),
                         )),
-                    onDoubleTap: () => AdaptiveTheme.of(context).setLight(),
                     child: CircleAvatar(
                       backgroundImage: NetworkImage(
                         photoUrl!,
                       ),
                     ),
-
-                    // Your CircleAvatar properties here
                   ),
                 ),
               ],
@@ -166,23 +159,25 @@ class _HomeScreenState extends State<HomeScreen> {
             actions: [
               Padding(
                 padding: EdgeInsets.only(
-                    right: MediaQuery.of(context).size.width * 0.05),
+                    right: MediaQuery.of(context).size.shortestSide * 0.05),
                 child: IconButton(
                     onPressed: () {
                       searchController.clear();
-                      AppBarWithSearchSwitch.of(context)!.startSearch();
-
-                      // Navigator.push(context, MaterialPageRoute(builder: (context) => SearchPage()));
+                      if (mounted) {
+                        AppBarWithSearchSwitch.of(context)!.startSearch();
+                      }
                     },
                     icon: const Icon(PhosphorIcons.magnifying_glass)),
               ),
             ],
             title: GestureDetector(
               onTap: () {
-                setState(() {
-                  searchController.clear();
-                  AppBarWithSearchSwitch.of(context)!.startSearch();
-                });
+                if (mounted) {
+                  setState(() {
+                    searchController.clear();
+                    AppBarWithSearchSwitch.of(context)!.startSearch();
+                  });
+                }
               },
               child: Text(
                 "Booness",
@@ -199,8 +194,6 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         child: const Icon(PhosphorIcons.plus),
         onPressed: () {
-          createDailyNotification(context);
-
           Navigator.push(
               context,
               PageTransition(

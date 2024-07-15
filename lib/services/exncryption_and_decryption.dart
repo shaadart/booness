@@ -2,21 +2,23 @@ import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+
 
 class EncryptionService {
-  final String uid;
+  static final String? uid =
+      FirebaseAuth.instance.currentUser!.providerData[0].uid;
 
-  EncryptionService(this.uid);
-
-  // Generate a 32-byte key from the uid
-  Key _generateKey() {
-    final keyBytes = utf8.encode(uid);
+  // Generate a 32-byte key from the static uid
+  static Key _generateKey() {
+    final keyBytes = utf8.encode(uid!);
     final hash = sha256.convert(keyBytes).bytes;
     return Key(Uint8List.fromList(hash));
   }
 
-  // Encrypt text using the uid as the encryption key
-  String encryptText(String text) {
+  // Encrypt text using the static uid as the encryption key
+  static String encryptText(String text) {
     final key = _generateKey();
     final iv = IV.fromLength(16); // Use a random IV for each encryption
 
@@ -28,8 +30,12 @@ class EncryptionService {
     return result;
   }
 
-  // Decrypt text using the uid as the decryption key
-  String decryptText(String encryptedText) {
+  // Decrypt text using the static uid as the decryption key
+  static String decryptText(String encryptedText) {
+    if (encryptedText.isEmpty) {
+      return ''; // Handle empty encrypted text
+    }
+
     try {
       final key = _generateKey();
       final parts = encryptedText.split(':');
@@ -46,7 +52,13 @@ class EncryptionService {
       return decrypted;
     } catch (e) {
       print("Decryption error: $e");
-      return '';
+      return ''; // Handle decryption failure gracefully
     }
   }
+
+  // Static instance getter for EncryptionService
+  static EncryptionService get instance => EncryptionService._internal();
+
+  // Private constructor for singleton pattern
+  EncryptionService._internal();
 }

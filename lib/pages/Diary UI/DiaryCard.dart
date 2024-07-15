@@ -1,3 +1,4 @@
+import 'package:booness/pages/Read%20Write%20Edit/readDiary.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -8,15 +9,11 @@ import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:page_transition/page_transition.dart';
 import 'package:vibration/vibration.dart';
-import 'package:encrypt/encrypt.dart';
-import 'dart:typed_data';
-import 'package:crypto/crypto.dart';
 
-import '../models/userData.dart';
-import '../services/exncryption_and_decryption.dart';
-import '../services/realtime_database.dart';
-import 'DairyUi.dart';
-import 'Write and Edit/editDiary.dart';
+import '../../models/userData.dart';
+import '../../services/realtime_database.dart';
+import '../Read Write Edit/editDiary.dart';
+import 'DairyUi.dart'; // Import the vibration package
 
 class DiaryCard extends StatefulWidget {
   final String entry;
@@ -42,41 +39,14 @@ class _DiaryCardState extends State<DiaryCard> {
   late Map<int, Offset> imageOffsets;
   late double leftPosition = 0.0;
   late double topPosition = 0.0;
-  late String decryptedTitle = ''; // Initialize with empty string
-  late String decryptedEntry = ''; // Initialize with empty string
 
   @override
   void initState() {
     super.initState();
+    // Initialize offsets for each image
     imageOffsets = {};
     for (int i = 0; i < widget.imageUrls.length; i++) {
-      imageOffsets[i] = Offset(20.0 * i, 0.0);
-    }
-    _decryptData();
-  }
-
-  void _decryptData() {
-    try {
-      EncryptionService encryptionService = EncryptionService(uid!);
-      String decryptedTitleTemp = encryptionService.decryptText(widget.title);
-      String decryptedEntryTemp = encryptionService.decryptText(widget.entry);
-
-      // Print statements for debugging
-      print("This is the widget.title: ${widget.title}");
-      print("This is the decrypted title: $decryptedTitleTemp");
-      print("This is the widget.entry: ${widget.entry}");
-      print("This is the decrypted entry: $decryptedEntryTemp");
-
-      setState(() {
-        decryptedTitle = decryptedTitleTemp; // Update decryptedTitle
-        decryptedEntry = decryptedEntryTemp; // Update decryptedEntry
-      });
-    } catch (e) {
-      print("Decryption error: $e");
-      setState(() {
-        decryptedTitle = "Text Decryption Error";
-        decryptedEntry = "Text Decryption Error";
-      });
+      imageOffsets[i] = Offset(20.0 * i, 0.0); // Initial offsets set to (0, 0)
     }
   }
 
@@ -112,8 +82,8 @@ class _DiaryCardState extends State<DiaryCard> {
             RenderBox box = context.findRenderObject() as RenderBox;
             Offset localOffset = box.globalToLocal(details.offset);
 
-            double maxDx = box.size.width - 55.0 + 25.0;
-            double maxDy = box.size.height - 55.0 + 25;
+            double maxDx = box.size.shortestSide - 55.0 + 25.0;
+            double maxDy = box.size.longestSide - 55.0 + 25;
 
             double dx = localOffset.dx.clamp(-10.0, maxDx);
             double dy = localOffset.dy.clamp(-10.0, maxDy);
@@ -124,8 +94,9 @@ class _DiaryCardState extends State<DiaryCard> {
               'image_position': [dx, dy],
             });
           });
+          // Trigger a small vibration when the image position is updated
           if (await Vibration.hasVibrator() ?? false) {
-            Vibration.vibrate(duration: 50);
+            Vibration.vibrate(duration: 50); // 50 milliseconds vibration
           }
         },
         feedback: imageUrl == "404"
@@ -150,33 +121,27 @@ class _DiaryCardState extends State<DiaryCard> {
   @override
   Widget build(BuildContext context) {
     final formattedDate = formatDate(widget.date);
-    try {
-      final document =
-          Document.fromDelta(Delta.fromJson(jsonDecode(decryptedEntry)));
-      final plainText = document.toPlainText();
-      decryptedEntry = plainText; // Update the decryptedEntry to plainText
-    } catch (e) {
-      print("Error parsing decrypted entry: $e");
-    }
+    final document =
+        Document.fromDelta(Delta.fromJson(jsonDecode(widget.entry)));
+    final plainText = document.toPlainText();
+
     return GestureDetector(
       onTap: () {
-        setState(() {
-          Navigator.push(
-            context,
-            PageTransition(
-              curve: Curves.fastLinearToSlowEaseIn,
-              duration: const Duration(milliseconds: 200),
-              type: PageTransitionType.leftToRight,
-              child: EditDiary(
-                title: decryptedTitle,
-                entry: decryptedEntry,
-                date: DateTime.parse(widget.date).toString(),
-                id: widget.id,
-                images: widget.imageUrls.isEmpty ? ["404"] : widget.imageUrls,
-              ),
+        Navigator.push(
+          context,
+          PageTransition(
+            curve: Curves.fastLinearToSlowEaseIn,
+            duration: const Duration(milliseconds: 200),
+            type: PageTransitionType.bottomToTop,
+            child: ReadDiary(
+              title: widget.title,
+              entry: widget.entry,
+              date: DateTime.parse(widget.date).toString(),
+              id: widget.id,
+              images: widget.imageUrls.isEmpty ? ["404"] : widget.imageUrls,
             ),
-          );
-        });
+          ),
+        );
       },
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -196,7 +161,7 @@ class _DiaryCardState extends State<DiaryCard> {
                       children: [
                         ListTile(
                           title: HighlightText(
-                            decryptedTitle,
+                            widget.title,
                             highlight: Highlight(
                               words: searchController.text.isNotEmpty
                                   ? searchController.text.split(' ')
@@ -216,29 +181,31 @@ class _DiaryCardState extends State<DiaryCard> {
                           ),
                         ),
                         ListTile(
-                          subtitle: HighlightText(
-                            decryptedEntry.length > 144
-                                ? decryptedEntry.substring(0, 89) + ' ... '
-                                : decryptedEntry,
-                            highlight: Highlight(
-                              words: searchController.text.isNotEmpty
-                                  ? searchController.text.split(' ')
-                                  : [],
-                            ),
-                            caseSensitive: false,
-                            detectWords: true,
-                            highlightStyle: GoogleFonts.silkscreen(
-                              color: Theme.of(context)
-                                  .indicatorColor
-                                  .withGreen(144),
-                            ),
-                            style: GoogleFonts.enriqueta(),
-                          ),
-                        ),
-                        ListTile(
-                          subtitle: Text(
-                            formattedDate,
-                            style: GoogleFonts.silkscreen(fontSize: 8),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              HighlightText(
+                                plainText.length > 144
+                                    ? plainText.substring(0, 89) + ' ... '
+                                    : plainText,
+                                highlight: Highlight(
+                                  words: searchController.text.isNotEmpty
+                                      ? searchController.text.split(' ')
+                                      : [],
+                                ),
+                                caseSensitive: false,
+                                detectWords: true,
+                                highlightStyle: GoogleFonts.silkscreen(
+                                  color: Theme.of(context)
+                                      .indicatorColor
+                                      .withGreen(144),
+                                ),
+                              ),
+                              Text(
+                                formattedDate,
+                                style: GoogleFonts.silkscreen(fontSize: 8),
+                              ),
+                            ],
                           ),
                         ),
                       ],

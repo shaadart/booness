@@ -2,8 +2,10 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:encrypt/encrypt.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:image/image.dart' as img;
-import 'package:booness/pages/Write%20and%20Edit/writeDiary.dart';
+import 'package:booness/pages/Read%20Write%20Edit/writeDiary.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
@@ -53,7 +55,6 @@ class _EditDiaryState extends State<EditDiary> {
   @override
   void initState() {
     super.initState();
-    EncryptionService encryptionService = EncryptionService(uid!);
 
     _imagesNetwork = List<String>.from(widget.images);
     userSelectedDate = DateTime.parse(widget.date);
@@ -61,12 +62,8 @@ class _EditDiaryState extends State<EditDiary> {
     widgetId = widget.id;
 
     try {
-      final trimmedJson = widget.entry.trim().replaceAll('\u00A0', ' ');
-
-      // Decrypt the entry retrieved from Firebase
-      final decryptedData = encryptionService.decryptText(trimmedJson);
-
-      final decodedData = jsonDecode(decryptedData);
+      final trimmedJson = widget.entry.trim().replaceAll('\u00A0', '');
+      final decodedData = jsonDecode(trimmedJson);
       final doc = Document.fromJson(decodedData);
       quillController = QuillController(
         document: doc,
@@ -75,16 +72,25 @@ class _EditDiaryState extends State<EditDiary> {
     } catch (error) {
       print('Error decoding JSON: $error');
     }
-
     quillController.addListener(() {
       final delta = quillController.document.toDelta();
       final jsonString = jsonEncode(delta.toJson());
 
       // Encrypt the entry before saving to Firebase
-      final encryptedEntry = encryptionService.encryptText(jsonString);
+      final encryptedEntry = EncryptionService.encryptText(jsonString);
 
       ref.child(widgetId).update({
         'entry': encryptedEntry,
+        "image_position": [0, 0]
+      });
+    });
+
+    titleController.addListener(() {
+      final encryptedTitle =
+          EncryptionService.encryptText(titleController.text);
+      ref.child(widgetId).update({
+        'title': encryptedTitle,
+        "image_position": [0, 0]
       });
     });
     titleController.addListener(_updateMaxLines);
@@ -122,41 +128,53 @@ class _EditDiaryState extends State<EditDiary> {
   }
 
   final picker = ImagePicker();
-
   Future pickImages() async {
     if (_imagesFile.length + _imagesNetwork.length >= 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Add only 5 photos')),
+        const SnackBar(content: Text('Add only 5 photos')),
       );
       return;
     }
 
-    final pickedFiles = await picker.pickMultiImage(imageQuality: 50);
-    if (pickedFiles != null) {
-      if (_imagesFile.length + _imagesNetwork.length + pickedFiles.length > 6) {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'png', 'gif', 'jpeg'],
+      allowMultiple: true,
+    );
+
+    if (result != null) {
+      if (_imagesFile.length + _imagesNetwork.length + result.files.length >
+          6) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Add only 5 photos')),
+          const SnackBar(content: const Text('Add only 5 photos')),
         );
         return;
       }
 
-      for (var file in pickedFiles) {
-        final bytes = await file.readAsBytes();
-        img.Image? image = img.decodeImage(bytes);
+      for (var file in result.files) {
+        if (file.extension == 'gif') {
+          // Handle GIF file
+          File gifFile = File(file.path!);
+          _imagesFile.add(gifFile);
+        } else {
+          // Handle image file
+          final bytes = await File(file.path!).readAsBytes();
+          img.Image? image = img.decodeImage(bytes);
 
-        if (image != null) {
-          img.Image compressedImage = img.copyResize(image, width: 500);
-          List<int> compressedBytes;
+          if (image != null) {
+            img.Image compressedImage = img.copyResize(image, width: 500);
+            List<int> compressedBytes;
 
-          if (image.hasAlpha) {
-            compressedBytes = img.encodePng(compressedImage);
-          } else {
-            compressedBytes = img.encodeJpg(compressedImage, quality: 45);
+            if (image.hasAlpha) {
+              compressedBytes = img.encodePng(compressedImage);
+            } else {
+              compressedBytes = img.encodeJpg(compressedImage, quality: 45);
+            }
+
+            File compressedFile = File(file.path!)
+              ..writeAsBytesSync(compressedBytes);
+            _imagesFile.add(compressedFile);
           }
-
-          File compressedFile = File(file.path)
-            ..writeAsBytesSync(compressedBytes);
-          _imagesFile.add(compressedFile);
         }
       }
 
@@ -270,9 +288,8 @@ class _EditDiaryState extends State<EditDiary> {
                       children: [
                         Text(
                           userSelectedDate != null
-                              ? DateFormat('dd-MM-yyyy')
-                                  .format(userSelectedDate)
-                              : DateFormat('dd-MM-yyyy').format(DateTime.now()),
+                              ? DateFormat('dd-MM-yy').format(userSelectedDate)
+                              : DateFormat('dd-MM-yy').format(DateTime.now()),
                         ),
                       ],
                     ),
@@ -286,7 +303,10 @@ class _EditDiaryState extends State<EditDiary> {
           leading: IconButton(
             icon: const Icon(PhosphorIcons.x),
             onPressed: () {
-              Navigator.push(
+              titleController.dispose();
+              quillController.dispose();
+
+              Navigator.pushReplacement(
                 context,
                 PageTransition(
                   curve: Curves.fastEaseInToSlowEaseOut,
@@ -300,8 +320,8 @@ class _EditDiaryState extends State<EditDiary> {
           actions: [
             IconButton(
               icon: isLoading
-                  ? CircularProgressIndicator()
-                  : Icon(PhosphorIcons.check),
+                  ? const CircularProgressIndicator()
+                  : const Icon(PhosphorIcons.check),
               onPressed: () async {
                 if (isLoading == false) {
                   setState(() {
@@ -328,12 +348,8 @@ class _EditDiaryState extends State<EditDiary> {
                   // Combine new and existing URLs
                   imageUrls.addAll(_imagesNetwork);
 
-                  final delta = quillController.document.toDelta();
-                  final jsonString = jsonEncode(delta.toJson());
                   ref.child(widgetId).update({
                     'id': widgetId,
-                    'title': titleController.text,
-                    'entry': jsonString,
                     'date': userSelectedDate.toString(),
                     'images': imageUrls,
                   });
@@ -347,30 +363,33 @@ class _EditDiaryState extends State<EditDiary> {
                   });
 
                   _focusNode.unfocus();
+                  userSelectedDate = DateTime.now();
                   Navigator.pop(context);
                 }
               },
             ),
           ],
-          title: Text(
-            "Edit !",
-            style: GoogleFonts.silkscreen(
-              fontWeight: FontWeight.bold,
+          title: Opacity(
+            opacity: 0.89,
+            child: Text(
+              "Edit",
+              style: GoogleFonts.silkscreen(),
             ),
           ),
           toolbarHeight: 50,
           centerTitle: true,
         ),
         body: Padding(
-          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
+          padding:
+              EdgeInsets.all(MediaQuery.of(context).size.shortestSide * 0.05),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding:
-                      EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
+                  padding: EdgeInsets.all(
+                      MediaQuery.of(context).size.shortestSide * 0.05),
                   child: Center(
                     child: TextFormField(
                       maxLines: maxLines,
@@ -479,7 +498,7 @@ class _EditDiaryState extends State<EditDiary> {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.close,
+                  PhosphorIcons.x,
                   color: Colors.white,
                   size: 18,
                 ),

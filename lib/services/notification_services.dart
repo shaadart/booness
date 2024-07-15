@@ -1,23 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'local_database_service.dart'; // Import the DatabaseHelper
 
-// Global variable to store the scheduled notification ID
 int? scheduledNotificationId;
 
-
-// Function to create or update daily notification
 Future<void> createDailyNotification(BuildContext context) async {
   try {
-    // Cancel any existing notification before scheduling a new one
     if (scheduledNotificationId != null) {
-      AwesomeNotifications().cancel(scheduledNotificationId!);
+      await AwesomeNotifications().cancel(scheduledNotificationId!);
       scheduledNotificationId = null;
     }
 
-
-
-
-    // Show time picker to select notification time with 24-hour format
     TimeOfDay? selectedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
@@ -30,8 +23,12 @@ Future<void> createDailyNotification(BuildContext context) async {
     );
 
     if (selectedTime != null) {
-      // Generate a unique notification id for each notification
-      scheduledNotificationId = DateTime.now().millisecondsSinceEpoch & 0x3FFFFFFF;
+      await AwesomeNotifications().cancelAll();
+      await DatabaseHelper()
+          .saveNotificationTime(selectedTime.hour, selectedTime.minute);
+
+      scheduledNotificationId =
+          DateTime.now().millisecondsSinceEpoch & 0x3FFFFFFF;
 
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
@@ -43,11 +40,11 @@ Future<void> createDailyNotification(BuildContext context) async {
         ),
         schedule: NotificationCalendar(
           repeats: true,
-          preciseAlarm: true,
+          preciseAlarm: false,
           allowWhileIdle: true,
           hour: selectedTime.hour,
           minute: selectedTime.minute,
-          second: 0,
+          second: 1,
         ),
         actionButtons: [
           NotificationActionButton(
@@ -57,11 +54,21 @@ Future<void> createDailyNotification(BuildContext context) async {
         ],
       );
 
-      // Print confirmation message after notification is scheduled
       print(
           "Daily Reminder Notification set for ${selectedTime.format(context)}");
     }
   } catch (e) {
     print('Error scheduling notification: $e');
+  }
+}
+
+Future<void> checkAndPrintScheduledNotifications() async {
+  try {
+    List<NotificationModel> scheduledNotifications =
+        await AwesomeNotifications().listScheduledNotifications();
+    print(
+        "Number of scheduled notifications: ${scheduledNotifications.length}");
+  } catch (e) {
+    print("Error checking scheduled notifications: $e");
   }
 }
