@@ -6,6 +6,8 @@ import 'package:firebase_database/firebase_database.dart';
 import '../../main.dart';
 
 class SetUsernameScreen extends StatefulWidget {
+  const SetUsernameScreen({super.key});
+
   @override
   _SetUsernameScreenState createState() => _SetUsernameScreenState();
 }
@@ -47,15 +49,15 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Set Username'),
+        title: const Text('Set Username'),
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: _usernameController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Username',
               ),
               onChanged: (value) {
@@ -66,11 +68,11 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
                 }
               },
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             ElevatedButton(
               onPressed: () {
                 Navigator.pushReplacement(
-                    context, MaterialPageRoute(builder: (context) => MyApp()));
+                    context, MaterialPageRoute(builder: (context) => const MyApp()));
               },
               // isChecking
               //     ? null
@@ -88,17 +90,17 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
               //         }
               //       },
               child: isChecking
-                  ? CircularProgressIndicator(
+                  ? const CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     )
-                  : Text('Save'),
+                  : const Text('Save'),
             ),
             if (errorMessage != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
                 child: Text(
                   errorMessage!,
-                  style: TextStyle(color: Colors.red),
+                  style: const TextStyle(color: Colors.red),
                 ),
               ),
           ],

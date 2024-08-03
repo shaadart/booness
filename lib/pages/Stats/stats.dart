@@ -1,8 +1,6 @@
 import 'package:banner_carousel/banner_carousel.dart';
-import 'package:booness/main.dart';
 import 'package:booness/pages/Stats/your_lives.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'streaks.dart';
 
@@ -20,13 +18,13 @@ class _StatsState extends State<Stats> {
       padding: EdgeInsets.only(
           top: MediaQuery.of(context).size.shortestSide * 0.03,
           bottom: MediaQuery.of(context).size.shortestSide * 0.03),
-      child: BannerCarousel(
+      child: const BannerCarousel(
         animation: true,
         showIndicator: true,
         customizedBanners: [
           // MySliderScreen(),
-          const Streaks(),
-          const YourLives(),
+          Streaks(),
+          YourLives(),
         ],
       ),
     );

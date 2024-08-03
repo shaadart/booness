@@ -7,7 +7,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,11 +20,6 @@ import '../../models/diaryentry.dart';
 import '../../models/userData.dart';
 import '../../services/exncryption_and_decryption.dart';
 
-DateTime now = DateTime.now();
-late ConfettiController confettiController;
-DateTime date = DateTime(now.year, now.month, now.day);
-var userSelectedDate = DateTime.now();
-
 class WriteDiary extends StatefulWidget {
   final DiaryEntry? entry;
   const WriteDiary({super.key, this.entry});
@@ -36,11 +30,13 @@ class WriteDiary extends StatefulWidget {
 
 class _WriteDiaryState extends State<WriteDiary> {
   TextEditingController titleController = TextEditingController();
+  late ConfettiController confettiController;
   QuillController quillController = QuillController.basic();
   final picker = ImagePicker();
   late EncryptionService encryptionService;
+  var userSelectedDate = DateTime.now();
 
-  List<File> _images = []; // List to store picked images
+  final List<File> _images = []; // List to store picked images
   bool isLoading = false;
   int maxLines = 2;
   double _titleFontSize = 21;
@@ -48,7 +44,7 @@ class _WriteDiaryState extends State<WriteDiary> {
   Future<void> pickImages() async {
     if (_images.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You can only add up to 5 images.')),
+        const SnackBar(content: Text('You can only add up to 5 images.')),
       );
       return;
     }
@@ -64,7 +60,7 @@ class _WriteDiaryState extends State<WriteDiary> {
         // Ensure the total number of images does not exceed 5
         if (_images.length >= 5) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('You can only add up to 5 images.')),
+            const SnackBar(content: Text('You can only add up to 5 images.')),
           );
           break;
         }
@@ -108,6 +104,7 @@ class _WriteDiaryState extends State<WriteDiary> {
     super.initState();
     titleController.addListener(_updateMaxLines);
     titleController.addListener(_adjustFontSize);
+    encryptionService = EncryptionService.instance; // Initialize if needed
   }
 
   void _updateMaxLines() {
@@ -143,12 +140,12 @@ class _WriteDiaryState extends State<WriteDiary> {
     });
 
     try {
+      if (!mounted) return;
       if (quillController.document.isEmpty()) {
         throw Exception('Diary entry cannot be empty');
       }
-
       String id = DateTime.now().millisecondsSinceEpoch.toString();
-      firebase_storage.Reference storageRef = storage.ref('/${uid}/${id}');
+      firebase_storage.Reference storageRef = storage.ref('/$uid/$id');
 
       List<String> imageUrls = [];
 
@@ -200,6 +197,8 @@ class _WriteDiaryState extends State<WriteDiary> {
       if (mounted) {
         setState(() {
           isLoading = false;
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (context) => HomeScreen(title: '')));
         });
       }
     }
@@ -254,9 +253,14 @@ class _WriteDiaryState extends State<WriteDiary> {
 
   @override
   void dispose() {
-    quillController.dispose();
     titleController.removeListener(_updateMaxLines);
-    titleController.dispose();
+    titleController.removeListener(_adjustFontSize);
+    if (quillController.document.isEmpty() &&
+        titleController.text.isEmpty &&
+        _images.isEmpty) {
+      titleController.dispose();
+      quillController.dispose();
+    }
     super.dispose();
   }
 
@@ -346,33 +350,37 @@ class _WriteDiaryState extends State<WriteDiary> {
                   controller: quillController,
                 ),
               ),
-              IconButton(
-                onPressed: _images.length >= 5
-                    ? null
-                    : () async {
-                        await pickImages();
-                      },
-                icon: Icon(PhosphorIcons.image,
-                    color: _images.length >= 5 ? Colors.grey : null),
-              ),
-              OutlinedButton(
-                onPressed: () {
-                  showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  ).then((selectedDate) {
-                    if (selectedDate != null) {
-                      setState(() {
-                        userSelectedDate = selectedDate;
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: _images.length >= 5
+                        ? null
+                        : () async {
+                            await pickImages();
+                          },
+                    icon: Icon(PhosphorIcons.image,
+                        color: _images.length >= 5 ? Colors.grey : null),
+                  ),
+                  OutlinedButton(
+                    onPressed: () {
+                      showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      ).then((selectedDate) {
+                        if (selectedDate != null) {
+                          setState(() {
+                            userSelectedDate = selectedDate;
+                          });
+                        }
                       });
-                    }
-                  });
-                },
-                child: Text(
-                  DateFormat('dd-MM-yy').format(userSelectedDate),
-                ),
+                    },
+                    child: Text(
+                      DateFormat('dd-MM-yy').format(userSelectedDate),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -438,10 +446,22 @@ class _WriteDiaryState extends State<WriteDiary> {
                       ),
                       controller: titleController,
                       decoration: InputDecoration(
+                        counter: Opacity(
+                          opacity: 0.34,
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: Text(
+                              "${titleController.text.length.toString()}/60",
+                              style: GoogleFonts.silkscreen(),
+                            ),
+                          ),
+                        ),
                         counterStyle: GoogleFonts.silkscreen(),
-                        hintText: "What happened today?",
+                        hintText: "Title",
                         hintStyle: GoogleFonts.silkscreen(
-                          fontSize: _titleFontSize,
+                          fontSize: titleController.text.isEmpty
+                              ? 34
+                              : _titleFontSize,
                           fontWeight: FontWeight.bold,
                         ),
                         border: InputBorder.none,
@@ -529,7 +549,7 @@ class _WriteDiaryState extends State<WriteDiary> {
                         ),
                       )
                     : Container(
-                        height: MediaQuery.of(context).size.longestSide * 0.05,
+                        height: MediaQuery.of(context).size.longestSide * 0.02,
                       ),
                 QuillEditor(
                   configurations: QuillEditorConfigurations(
@@ -576,7 +596,7 @@ Future<void> checkAndRenewLives() async {
         });
       } else if (lives > 0) {
         int finalLife =
-            (lives - dateDifference) > 0 ? (lives - dateDifference) : 0;
+            (lives - dateDifference) >= 0 ? (lives - dateDifference) : 0;
         await streakRef.update({
           'lives': finalLife,
           'lastUpdated': DateTime.now().toString(),
@@ -587,6 +607,14 @@ Future<void> checkAndRenewLives() async {
       await streakRef.update({
         'lives': 5, // Reset lives to 5 at the beginning of the month
         'lastUpdated': DateTime.now().toString(),
+      });
+    }
+
+    if (lives == null && streakData['streak'] == null) {
+      await streakRef.set({
+        "streak": 0,
+        "lives": 5,
+        "lastUpdated": DateTime.now().toString(),
       });
     }
   }

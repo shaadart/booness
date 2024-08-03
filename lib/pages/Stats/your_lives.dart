@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../models/userData.dart';
 import '../../services/streak_services.dart';
 
 class MySliderScreen extends StatefulWidget {
+  const MySliderScreen({super.key});
+
   @override
   _MySliderScreenState createState() => _MySliderScreenState();
 }
@@ -32,7 +33,7 @@ class _MySliderScreenState extends State<MySliderScreen> {
         ),
         child: Padding(
           // remove the const here
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -42,7 +43,7 @@ class _MySliderScreenState extends State<MySliderScreen> {
               //     fontWeight: FontWeight.bold,
               //   ),
               // ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: moods
@@ -56,16 +57,16 @@ class _MySliderScreenState extends State<MySliderScreen> {
                             children: [
                               Text(
                                 mood,
-                                style: TextStyle(fontSize: 34),
+                                style: const TextStyle(fontSize: 34),
                               ),
                             ],
                           ),
                         ))
                     .toList(),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
             ],
           ),
         ),
@@ -130,7 +131,7 @@ class _YourLivesState extends State<YourLives> {
                           PhosphorIcons.lightning_fill,
                           color: index < remainingLives
                               ? Colors.green
-                              : Color.fromARGB(255, 31, 0, 98),
+                              : const Color.fromARGB(255, 31, 0, 98),
                           size: 48,
                         );
                       }),

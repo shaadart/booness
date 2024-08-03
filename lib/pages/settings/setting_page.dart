@@ -1,4 +1,3 @@
-import 'dart:ffi';
 
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
@@ -13,6 +12,8 @@ import '../../services/local_database_service.dart';
 import '../../services/notification_services.dart';
 
 class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
+
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
@@ -64,7 +65,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   curve: Curves.fastEaseInToSlowEaseOut,
                   duration: const Duration(milliseconds: 200),
                   type: PageTransitionType.leftToRight,
-                  child: AccountAndPrivacyPage(),
+                  child: const AccountAndPrivacyPage(),
                 ),
               );
             },

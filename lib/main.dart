@@ -3,19 +3,19 @@ import 'package:app_bar_with_search_switch/app_bar_with_search_switch.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:booness/firebase_options.dart';
 import 'package:booness/models/userData.dart';
-import 'package:booness/services/notification_services.dart';
 import 'package:booness/services/themes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:provider/provider.dart';
 import 'pages/Diary UI/DairyUi.dart';
 import 'pages/Set up and sign up/onboardoing.dart';
 import 'pages/Read Write Edit/writeDiary.dart';
 import 'pages/settings/setting_page.dart';
+import 'provider/search_controller_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +43,12 @@ Future<void> main() async {
   // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: []);
   // SystemChrome.setPreferredOrientations(
   //     [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  runApp(const MaterialApp(home: MyApp()));
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => SearchControllerProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 final currentUser = FirebaseAuth.instance.currentUser;
@@ -71,6 +76,7 @@ class _MyAppState extends State<MyApp> {
                     onFinish: () {},
                   )
                 : const HomeScreen(title: 'Daily Goodness')
+            // : ResponsiveLayout(mobile: MobileBody(), tablet: DesktopBody())
             // home: const HomeScreen(title: 'Daily Goodness'),
             ));
   }
@@ -99,6 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final searchController =
+        Provider.of<SearchControllerProvider>(context).searchController;
     return Scaffold(
       appBar: AppBarWithSearchSwitch(
         titleTextStyle: GoogleFonts.silkscreen(fontSize: 21),
@@ -135,22 +143,19 @@ class _HomeScreenState extends State<HomeScreen> {
             elevation: 4,
             leading: Row(
               children: [
-                Padding(
-                  padding: EdgeInsets.only(
-                      left: MediaQuery.of(context).size.shortestSide * 0.03),
-                  child: GestureDetector(
-                    onTap: () => Navigator.push(
-                        context,
-                        PageTransition(
-                          curve: Curves.fastEaseInToSlowEaseOut,
-                          duration: const Duration(milliseconds: 200),
-                          type: PageTransitionType.leftToRight,
-                          child: SettingsPage(),
-                        )),
-                    child: CircleAvatar(
-                      backgroundImage: NetworkImage(
-                        photoUrl!,
-                      ),
+                Text("  "),
+                InkWell(
+                  onTap: () => Navigator.push(
+                      context,
+                      PageTransition(
+                        curve: Curves.fastEaseInToSlowEaseOut,
+                        duration: const Duration(milliseconds: 200),
+                        type: PageTransitionType.leftToRight,
+                        child: const SettingsPage(),
+                      )),
+                  child: CircleAvatar(
+                    backgroundImage: NetworkImage(
+                      photoUrl!,
                     ),
                   ),
                 ),
