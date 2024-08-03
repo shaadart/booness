@@ -3,33 +3,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 
 class AccountAndPrivacyPage extends StatelessWidget {
+  const AccountAndPrivacyPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Accounts and Privacy'),
+        title: const Text('Accounts and Privacy'),
       ),
       body: ListView(
         children: [
           ListTile(
-            leading: Icon(PhosphorIcons.user),
-            title: Text('Account Settings'),
+            leading: const Icon(PhosphorIcons.user),
+            title: const Text('Account Settings'),
             onTap: () {
               // Handle account settings tap
             },
           ),
 
-          Divider(),
+          const Divider(),
           ListTile(
-            leading: Icon(PhosphorIcons.sign_out),
-            title: Text('Log Out'),
+            leading: const Icon(PhosphorIcons.sign_out),
+            title: const Text('Log Out'),
             onTap: () {
               signOut(context);
             },
           ),
           ListTile(
-            leading: Icon(PhosphorIcons.trash),
-            title: Text('Delete Account'),
+            leading: const Icon(PhosphorIcons.trash),
+            title: const Text('Delete Account'),
             onTap: () {
               // Handle security settings tap
             },

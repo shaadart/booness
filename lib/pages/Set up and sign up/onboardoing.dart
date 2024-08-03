@@ -1,11 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:page_transition/page_transition.dart';
-import 'package:restart_app/restart_app.dart';
 
 import '../../main.dart';
 import '../../services/realtime_database.dart';
@@ -15,7 +14,7 @@ import 'setUsername.dart'; // Import your setUsername screen here
 class OnBoardingScreen extends StatefulWidget {
   final VoidCallback onFinish;
 
-  const OnBoardingScreen({Key? key, required this.onFinish}) : super(key: key);
+  const OnBoardingScreen({super.key, required this.onFinish});
 
   @override
   _OnBoardingScreenState createState() => _OnBoardingScreenState();
@@ -49,7 +48,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
       await fetchUserData(); // Fetch user data after setup
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => SetUsernameScreen()),
+        MaterialPageRoute(builder: (context) => const SetUsernameScreen()),
       );
     } else {
       // Existing user setup
@@ -65,16 +64,15 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
   }
 
   Future<void> setUpUser() async {
-    // Initialize user data in Realtime Database
     await streakRef.set({
       "streak": 0,
       "lives": 5,
-      "lastUpdated": DateTime.now().subtract(Duration(days: 1)).toString(),
+      "lastUpdated":
+          DateTime.now().subtract(const Duration(days: 1)).toString(),
     });
   }
 
   Future<void> fetchUserData() async {
-    // Restart.restartApp();
     try {
       // Example: Fetch user's streak data
       DataSnapshot snapshot = (await streakRef.once()) as DataSnapshot;
@@ -97,75 +95,77 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
     });
   }
 
+  bool isDesktop(BuildContext context) =>
+      MediaQuery.of(context).size.width > 600;
+
   @override
   Widget build(BuildContext context) {
     // Get the device's width and height
     final size = MediaQuery.of(context).size;
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: <Widget>[
-                Image.asset(
-                  "assets/onboarding/login.png",
-                  width: constraints.maxWidth,
-                  height:
-                      constraints.maxHeight * 0.4, // 40% of the screen height
-                  fit: BoxFit.cover,
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 16.0),
-                  child: ElevatedButton.icon(
-                    icon: Icon(
-                      PhosphorIcons.google_logo_fill,
-                      color: Colors.white,
-                    ),
-                    label: Text(
-                      'Continue with Google',
-                      style: GoogleFonts.silkscreen(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
-                    ),
-                    onPressed: handleGoogleBtnClick,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xffff00bf),
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal:
-                            size.shortestSide * 0.1, // 10% of the screen width
-                        vertical:
-                            size.longestSide * 0.02, // 2% of the screen height
-                      ),
-                    ),
+      body: Center(
+        child: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: OverflowBox(
+                  maxHeight: size.height,
+                  maxWidth: MediaQuery.of(context).size.width,
+                  child: Image.asset(
+                    "assets/onboarding/login.png",
+                    fit: BoxFit.cover,
+                    width: size.width,
+                    height: size.height,
                   ),
                 ),
-                SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    // Implement your logic for replaying video
-                  },
-                  child: Text(
-                    'Replay the video again',
-                    style: GoogleFonts.workSans(
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.pinkAccent,
-                      color: Color(0xffff00bf),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          );
-        },
+            Positioned(
+              top: 16.0, // Adjust the top padding as needed
+              left: 16.0, // Adjust the left padding as needed
+              child: IconButton.filled(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () {
+                  Navigator.pop(context); // Navigate back
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        child: Column(
+          children: [
+            ElevatedButton.icon(
+              icon: const Icon(
+                PhosphorIcons.google_logo_fill,
+                color: Colors.white,
+              ),
+              label: Text(
+                'Continue with Google',
+                style: GoogleFonts.silkscreen(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+              onPressed: handleGoogleBtnClick,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xffff00bf),
+                elevation: 1,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+        color: Colors.white,
       ),
     );
   }

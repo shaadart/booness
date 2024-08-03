@@ -2,10 +2,8 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'package:encrypt/encrypt.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image/image.dart' as img;
-import 'package:booness/pages/Read%20Write%20Edit/writeDiary.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
@@ -27,7 +25,7 @@ class EditDiary extends StatefulWidget {
   final String id;
   final List images;
 
-  EditDiary({
+  const EditDiary({
     super.key,
     required this.title,
     required this.entry,
@@ -46,18 +44,21 @@ class _EditDiaryState extends State<EditDiary> {
   String widgetId = "";
   final _focusNode = FocusNode();
   List<String> _imagesNetwork = [];
-  List<File> _imagesFile = [];
+  final List<File> _imagesFile = [];
   bool isLoading = false;
 
   int maxLines = 1;
   double _titleFontSize = 21;
+  var userEditPageDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
 
     _imagesNetwork = List<String>.from(widget.images);
-    userSelectedDate = DateTime.parse(widget.date);
+    setState(() {
+      userEditPageDate = DateTime.parse(widget.date);
+    });
     titleController.text = widget.title;
     widgetId = widget.id;
 
@@ -124,6 +125,8 @@ class _EditDiaryState extends State<EditDiary> {
   void dispose() {
     quillController.removeListener(() {});
     titleController.removeListener(() {});
+    titleController.dispose();
+    quillController.dispose();
     super.dispose();
   }
 
@@ -146,7 +149,7 @@ class _EditDiaryState extends State<EditDiary> {
       if (_imagesFile.length + _imagesNetwork.length + result.files.length >
           6) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: const Text('Add only 5 photos')),
+          const SnackBar(content: Text('Add only 5 photos')),
         );
         return;
       }
@@ -273,13 +276,13 @@ class _EditDiaryState extends State<EditDiary> {
                     onPressed: () {
                       showDatePicker(
                         context: context,
-                        initialDate: userSelectedDate,
+                        initialDate: userEditPageDate,
                         firstDate: DateTime(2000),
                         lastDate: DateTime(2100),
                       ).then((newDate) {
                         if (newDate != null) {
                           setState(() {
-                            userSelectedDate = newDate;
+                            userEditPageDate = newDate;
                           });
                         }
                       });
@@ -287,8 +290,8 @@ class _EditDiaryState extends State<EditDiary> {
                     child: Row(
                       children: [
                         Text(
-                          userSelectedDate != null
-                              ? DateFormat('dd-MM-yy').format(userSelectedDate)
+                          userEditPageDate != null
+                              ? DateFormat('dd-MM-yy').format(userEditPageDate)
                               : DateFormat('dd-MM-yy').format(DateTime.now()),
                         ),
                       ],
@@ -303,9 +306,6 @@ class _EditDiaryState extends State<EditDiary> {
           leading: IconButton(
             icon: const Icon(PhosphorIcons.x),
             onPressed: () {
-              titleController.dispose();
-              quillController.dispose();
-
               Navigator.pushReplacement(
                 context,
                 PageTransition(
@@ -318,56 +318,72 @@ class _EditDiaryState extends State<EditDiary> {
             },
           ),
           actions: [
-            IconButton(
-              icon: isLoading
-                  ? const CircularProgressIndicator()
-                  : const Icon(PhosphorIcons.check),
-              onPressed: () async {
-                if (isLoading == false) {
-                  setState(() {
-                    isLoading = true;
-                  });
-                } else {
-                  return;
-                }
-                if (isLoading) {
-                  firebase_storage.Reference storageRef =
-                      storage.ref('/$uid/${widget.id}');
-                  List<String> imageUrls = [];
+         IconButton(
+  icon: isLoading
+      ? const CircularProgressIndicator()
+      : const Icon(PhosphorIcons.check),
+  onPressed: () async {
+    if (isLoading) return;
 
-                  // Upload new images and get their URLs
-                  for (var image in _imagesFile) {
-                    firebase_storage.UploadTask task =
-                        storageRef.child(image.path).putFile(image);
-                    await task.whenComplete(() {});
-                    String downloadUrl =
-                        await task.snapshot.ref.getDownloadURL();
-                    imageUrls.add(downloadUrl);
-                  }
+    setState(() {
+      isLoading = true;
+    });
 
-                  // Combine new and existing URLs
-                  imageUrls.addAll(_imagesNetwork);
+    try {
+      firebase_storage.Reference storageRef =
+          firebase_storage.FirebaseStorage.instance.ref('/$uid/${widget.id}');
+      List<String> imageUrls = [];
 
-                  ref.child(widgetId).update({
-                    'id': widgetId,
-                    'date': userSelectedDate.toString(),
-                    'images': imageUrls,
-                  });
+      // Upload new images and get their URLs
+      for (var image in _imagesFile) {
+        firebase_storage.UploadTask task =
+            storageRef.child(image.path).putFile(image);
+        final snapshot = await task.whenComplete(() {});
+        String downloadUrl = await snapshot.ref.getDownloadURL();
+        imageUrls.add(downloadUrl);
+      }
 
-                  setState(() {
-                    _imagesNetwork =
-                        imageUrls; // Update the _imagesNetwork list with new URLs
-                    _imagesFile
-                        .clear(); // Clear the _imagesFile list after upload
-                    isLoading = false;
-                  });
+      imageUrls.addAll(_imagesNetwork);
 
-                  _focusNode.unfocus();
-                  userSelectedDate = DateTime.now();
-                  Navigator.pop(context);
-                }
-              },
-            ),
+      // Update Firebase Realtime Database
+      await ref.child(widgetId).update({
+        'id': widgetId,
+        'date': userEditPageDate.toString(),
+        'images': imageUrls,
+      });
+
+      setState(() {
+        _imagesNetwork = imageUrls; // Update the _imagesNetwork list with new URLs
+        _imagesFile.clear(); // Clear the _imagesFile list after upload
+        isLoading = false;
+        Navigator.pushReplacement(
+          context,
+          PageTransition(
+            curve: Curves.fastEaseInToSlowEaseOut,
+            duration: const Duration(milliseconds: 300),
+            type: PageTransitionType.topToBottom,
+            child: const HomeScreen(title: ''),
+          ),
+        );
+      });
+
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Diary updated')),
+      );
+
+    } catch (e) {
+      print('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update diary: $e')),
+      );
+      setState(() {
+        isLoading = false;
+      });
+    }
+  },
+)
+
           ],
           title: Opacity(
             opacity: 0.89,
@@ -446,11 +462,9 @@ class _EditDiaryState extends State<EditDiary> {
           onReorder: _onReorder,
           children: [
             ..._imagesFile
-                .map((file) => _buildReorderableImageCard(file: file))
-                .toList(),
+                .map((file) => _buildReorderableImageCard(file: file)),
             ..._imagesNetwork
-                .map((url) => _buildReorderableImageCard(url: url))
-                .toList(),
+                .map((url) => _buildReorderableImageCard(url: url)),
           ],
         ),
       ),
@@ -459,6 +473,7 @@ class _EditDiaryState extends State<EditDiary> {
 
   Widget _buildReorderableImageCard({File? file, String? url}) {
     return Card(
+      color: Theme.of(context).cardColor,
       key: ValueKey(file?.path ?? url),
       margin: const EdgeInsets.only(right: 10),
       child: Stack(

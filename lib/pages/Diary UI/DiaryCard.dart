@@ -8,12 +8,13 @@ import 'package:highlightable/highlightable.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:page_transition/page_transition.dart';
+import 'package:provider/provider.dart';
 import 'package:vibration/vibration.dart';
 
 import '../../models/userData.dart';
+import '../../provider/search_controller_provider.dart';
 import '../../services/realtime_database.dart';
-import '../Read Write Edit/editDiary.dart';
-import 'DairyUi.dart'; // Import the vibration package
+// Import the vibration package
 
 class DiaryCard extends StatefulWidget {
   final String entry;
@@ -21,6 +22,8 @@ class DiaryCard extends StatefulWidget {
   final String date;
   final String id;
   final List<String> imageUrls;
+  final Function(BuildContext, String, String, String, String, List<String>) onTap;
+  final ValueNotifier<String?> highlightedId;
 
   const DiaryCard({
     super.key,
@@ -29,6 +32,8 @@ class DiaryCard extends StatefulWidget {
     required this.date,
     required this.id,
     required this.imageUrls,
+    required this.onTap,
+    required this.highlightedId,
   });
 
   @override
@@ -40,6 +45,9 @@ class _DiaryCardState extends State<DiaryCard> {
   late double leftPosition = 0.0;
   late double topPosition = 0.0;
 
+  bool isMobile(BuildContext context) => MediaQuery.of(context).size.width <= 600;
+  bool isDesktop(BuildContext context) => MediaQuery.of(context).size.width > 600;
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +55,19 @@ class _DiaryCardState extends State<DiaryCard> {
     imageOffsets = {};
     for (int i = 0; i < widget.imageUrls.length; i++) {
       imageOffsets[i] = Offset(20.0 * i, 0.0); // Initial offsets set to (0, 0)
+    }
+    widget.highlightedId.addListener(_highlightListener);
+  }
+
+  @override
+  void dispose() {
+    widget.highlightedId.removeListener(_highlightListener);
+    super.dispose();
+  }
+
+  void _highlightListener() {
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -60,13 +81,10 @@ class _DiaryCardState extends State<DiaryCard> {
         .onValue;
   }
 
-  Widget _buildSingleImage(
-      BoxConstraints constraints, AsyncSnapshot<DatabaseEvent> snapshot) {
+  Widget _buildSingleImage(BoxConstraints constraints, AsyncSnapshot<DatabaseEvent> snapshot) {
     if (widget.imageUrls.isEmpty) return Container();
 
-    if (snapshot.hasData &&
-        snapshot.data != null &&
-        snapshot.data!.snapshot.value != null) {
+    if (snapshot.hasData && snapshot.data != null && snapshot.data!.snapshot.value != null) {
       final data = snapshot.data!.snapshot.value as Map;
       leftPosition = (data["image_position"][0]).toDouble();
       topPosition = (data["image_position"][1]).toDouble();
@@ -101,18 +119,24 @@ class _DiaryCardState extends State<DiaryCard> {
         },
         feedback: imageUrl == "404"
             ? Container()
-            : Image.network(
-                imageUrl,
-                width: 55,
-                height: 55,
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(8.0), // Adjust the border radius here
+                child: Image.network(
+                  imageUrl,
+                  width: 55,
+                  height: 55,
+                ),
               ),
         childWhenDragging: Container(),
         child: imageUrl == "404"
             ? Container()
-            : Image.network(
-                imageUrl,
-                width: 55,
-                height: 55,
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(8.0), // Adjust the border radius here
+                child: Image.network(
+                  imageUrl,
+                  width: 55,
+                  height: 55,
+                ),
               ),
       ),
     );
@@ -120,28 +144,34 @@ class _DiaryCardState extends State<DiaryCard> {
 
   @override
   Widget build(BuildContext context) {
+     final searchController = Provider.of<SearchControllerProvider>(context).searchController;
     final formattedDate = formatDate(widget.date);
-    final document =
-        Document.fromDelta(Delta.fromJson(jsonDecode(widget.entry)));
+    final document = Document.fromDelta(Delta.fromJson(jsonDecode(widget.entry)));
     final plainText = document.toPlainText();
+    bool isHighlighted = widget.highlightedId.value == widget.id;
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          PageTransition(
-            curve: Curves.fastLinearToSlowEaseIn,
-            duration: const Duration(milliseconds: 200),
-            type: PageTransitionType.bottomToTop,
-            child: ReadDiary(
-              title: widget.title,
-              entry: widget.entry,
-              date: DateTime.parse(widget.date).toString(),
-              id: widget.id,
-              images: widget.imageUrls.isEmpty ? ["404"] : widget.imageUrls,
+        widget.highlightedId.value = widget.id;
+        if (isDesktop(context)) {
+          widget.onTap(context, widget.title, widget.entry, widget.date, widget.id, widget.imageUrls);
+        } else {
+          Navigator.push(
+            context,
+            PageTransition(
+              curve: Curves.fastEaseInToSlowEaseOut,
+              duration: const Duration(milliseconds: 200),
+              type: PageTransitionType.rightToLeft,
+              child: ReadDiary(
+                title: widget.title,
+                entry: widget.entry,
+                date: widget.date,
+                id: widget.id,
+                images: widget.imageUrls.isEmpty ? ["404"] : widget.imageUrls,
+              ),
             ),
-          ),
-        );
+          );
+        }
       },
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -152,7 +182,9 @@ class _DiaryCardState extends State<DiaryCard> {
                 clipBehavior: Clip.none,
                 children: [
                   Card(
-                    color: Colors.white10,
+                    color: isHighlighted
+                        ? Theme.of(context).cardColor.withOpacity(0.5)
+                        : Theme.of(context).cardColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8.0),
                     ),
@@ -170,13 +202,10 @@ class _DiaryCardState extends State<DiaryCard> {
                             caseSensitive: false,
                             detectWords: true,
                             highlightStyle: GoogleFonts.silkscreen(
-                              color: Theme.of(context)
-                                  .indicatorColor
-                                  .withGreen(144),
+                              color: Theme.of(context).indicatorColor.withGreen(144),
                             ),
                             style: GoogleFonts.silkscreen(
-                              color:
-                                  Theme.of(context).colorScheme.inverseSurface,
+                              color: Theme.of(context).colorScheme.inverseSurface,
                             ),
                           ),
                         ),
@@ -186,7 +215,7 @@ class _DiaryCardState extends State<DiaryCard> {
                             children: [
                               HighlightText(
                                 plainText.length > 144
-                                    ? plainText.substring(0, 89) + ' ... '
+                                    ? '${plainText.substring(0, 89)} ... '
                                     : plainText,
                                 highlight: Highlight(
                                   words: searchController.text.isNotEmpty
@@ -196,9 +225,7 @@ class _DiaryCardState extends State<DiaryCard> {
                                 caseSensitive: false,
                                 detectWords: true,
                                 highlightStyle: GoogleFonts.silkscreen(
-                                  color: Theme.of(context)
-                                      .indicatorColor
-                                      .withGreen(144),
+                                  color: Theme.of(context).indicatorColor.withGreen(144),
                                 ),
                               ),
                               Text(
@@ -214,7 +241,7 @@ class _DiaryCardState extends State<DiaryCard> {
                   if (snapshot.connectionState == ConnectionState.waiting)
                     Center(child: Container()),
                   if (snapshot.hasError)
-                    Center(child: Text('Error loading image positions')),
+                    const Center(child: Text('Error loading image positions')),
                   if (snapshot.hasData)
                     _buildSingleImage(constraints, snapshot),
                 ],
@@ -245,7 +272,6 @@ String formatDate(String date) {
       daySuffix = 'th';
   }
 
-  String formattedDate =
-      '${dateTime.day}$daySuffix ${DateFormat.MMMM().format(dateTime)}';
+  String formattedDate = '${dateTime.day}$daySuffix ${DateFormat.MMMM().format(dateTime)}';
   return formattedDate;
 }

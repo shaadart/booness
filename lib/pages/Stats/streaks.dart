@@ -1,13 +1,7 @@
-import 'dart:math';
-
-import 'package:animated_text_lerp/animated_text_lerp.dart';
 import 'package:booness/services/streak_services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart' as intl;
-
-import '../../models/userData.dart';
 
 class Streaks extends StatefulWidget {
   const Streaks({super.key});
@@ -32,7 +26,6 @@ class _StreaksState extends State<Streaks> {
             child: Text('Error: ${snapshot.error}'),
           );
         }
-        
 
         if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
           return const Center(
@@ -48,12 +41,12 @@ class _StreaksState extends State<Streaks> {
         final lastRecordedDate = streakList[0];
 
         print(
-            "streak : ${streak}, lives: ${lives} Last recorded date: $lastRecordedDate");
+            "streak : $streak, lives: $lives Last recorded date: $lastRecordedDate");
 
         String streakString = streak.toString().padLeft(3, '0');
         String hundreds = streakString.length > 2 ? streakString[0] : '0';
         String tens = streakString.length > 1 ? streakString[1] : '0';
-        String units = streakString.length > 0 ? streakString[2] : '0';
+        String units = streakString.isNotEmpty ? streakString[2] : '0';
 
         return Center(
           child: Card(
@@ -68,7 +61,6 @@ class _StreaksState extends State<Streaks> {
                   Row(
                     children: [
                       RichText(
-                        textScaleFactor: 3,
                         text: TextSpan(
                           children: <TextSpan>[
                             TextSpan(
@@ -100,6 +92,7 @@ class _StreaksState extends State<Streaks> {
                             ),
                           ],
                         ),
+                        textScaler: const TextScaler.linear(3),
                       ),
                     ],
                   ),

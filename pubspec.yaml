@@ -14,6 +14,7 @@ dependencies:
   animated_text_lerp: ^1.0.5
   cloud_firestore:
   banner_carousel: ^1.2.1
+  provider:
   image_picker:
   firebase_storage:
   cupertino_icons:
@@ -52,6 +53,7 @@ dependencies:
   vibration: ^1.9.0
   encrypt: ^5.0.3
   
+  crypto: any
 dev_dependencies:
   flutter_lints:
   flutter_test:
