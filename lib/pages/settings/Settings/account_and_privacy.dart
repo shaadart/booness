@@ -13,15 +13,15 @@ class AccountAndPrivacyPage extends StatelessWidget {
       ),
       body: ListView(
         children: [
-          ListTile(
-            leading: const Icon(PhosphorIcons.user),
-            title: const Text('Account Settings'),
-            onTap: () {
-              // Handle account settings tap
-            },
-          ),
+          // ListTile(
+          //   leading: const Icon(PhosphorIcons.user),
+          //   title: const Text('Account Settings'),
+          //   onTap: () {
+          //     // Handle account settings tap
+          //   },
+          // ),
 
-          const Divider(),
+          // const Divider(),
           ListTile(
             leading: const Icon(PhosphorIcons.sign_out),
             title: const Text('Log Out'),

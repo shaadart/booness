@@ -1,4 +1,3 @@
-
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
@@ -70,38 +69,39 @@ class _SettingsPageState extends State<SettingsPage> {
               );
             },
           ),
-          ExpansionTileCard(
-            leading: const Icon(PhosphorIcons.paint_brush),
-            title: const Text('Themes'),
-            subtitle: const Text('Theme, wallpapers'),
-            children: [
-              ListTile(
-                title: const Text('Theme Mode'),
-                subtitle: const Text('Light, Dark, System Default'),
-                trailing: IconButton(
-                  icon: const Icon(PhosphorIcons.arrow_right),
-                  onPressed: () {
-                    AdaptiveTheme.of(context).toggleThemeMode();
-                  },
-                ),
-              ),
-            ],
-          ),
-          ExpansionTileCard(
+InkWell(
+  onTap: () {
+    AdaptiveTheme.of(context).toggleThemeMode();
+  },
+  child: StatefulBuilder(
+    builder: (context, setState) {
+      return ListTile(
+        title: const Text('Themes'),
+        subtitle: 
+        
+        AdaptiveTheme.of(context).mode.isLight
+            ? const Text('Tap to go Dark')
+            : const Text('Double Tap to go Light'),
+
+        leading: AdaptiveTheme.of(context).mode.isLight
+            ? const Icon(PhosphorIcons.moon)
+            : const Icon(PhosphorIcons.sun),
+      );
+    },
+  ),
+),
+
+         
+          ListTile(
             leading: const Icon(PhosphorIcons.bell),
-            title: const Text('Notifications'),
-            subtitle: const Text('Daily Reminders'),
-            children: [
-              ListTile(
-                subtitle: const Text('Remind me to write daily at'),
-                trailing: Text(savedNotificationTime ?? 'Not set'),
-                onTap: () async {
-                  await createDailyNotification(context);
-                  checkAndPrintScheduledNotifications();
-                  _loadSavedNotificationTime(); // Reload saved time after setting
-                },
-              ),
-            ],
+               title: const Text('Notifications'),
+            subtitle: const Text('Remind me to write daily at'),
+            trailing: Text(savedNotificationTime ?? 'Not set'),
+            onTap: () async {
+              await createDailyNotification(context);
+              checkAndPrintScheduledNotifications();
+              _loadSavedNotificationTime(); // Reload saved time after setting
+            },
           ),
           ListTile(
             leading: const Icon(PhosphorIcons.question),

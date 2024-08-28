@@ -1,3 +1,4 @@
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:booness/pages/Read%20Write%20Edit/readDiary.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,8 @@ class DiaryCard extends StatefulWidget {
   final String date;
   final String id;
   final List<String> imageUrls;
-  final Function(BuildContext, String, String, String, String, List<String>) onTap;
+  final Function(BuildContext, String, String, String, String, List<String>)
+      onTap;
   final ValueNotifier<String?> highlightedId;
 
   const DiaryCard({
@@ -45,8 +47,10 @@ class _DiaryCardState extends State<DiaryCard> {
   late double leftPosition = 0.0;
   late double topPosition = 0.0;
 
-  bool isMobile(BuildContext context) => MediaQuery.of(context).size.width <= 600;
-  bool isDesktop(BuildContext context) => MediaQuery.of(context).size.width > 600;
+  bool isMobile(BuildContext context) =>
+      MediaQuery.of(context).size.width <= 600;
+  bool isDesktop(BuildContext context) =>
+      MediaQuery.of(context).size.width > 600;
 
   @override
   void initState() {
@@ -81,10 +85,13 @@ class _DiaryCardState extends State<DiaryCard> {
         .onValue;
   }
 
-  Widget _buildSingleImage(BoxConstraints constraints, AsyncSnapshot<DatabaseEvent> snapshot) {
+  Widget _buildSingleImage(
+      BoxConstraints constraints, AsyncSnapshot<DatabaseEvent> snapshot) {
     if (widget.imageUrls.isEmpty) return Container();
 
-    if (snapshot.hasData && snapshot.data != null && snapshot.data!.snapshot.value != null) {
+    if (snapshot.hasData &&
+        snapshot.data != null &&
+        snapshot.data!.snapshot.value != null) {
       final data = snapshot.data!.snapshot.value as Map;
       leftPosition = (data["image_position"][0]).toDouble();
       topPosition = (data["image_position"][1]).toDouble();
@@ -120,7 +127,8 @@ class _DiaryCardState extends State<DiaryCard> {
         feedback: imageUrl == "404"
             ? Container()
             : ClipRRect(
-                borderRadius: BorderRadius.circular(8.0), // Adjust the border radius here
+                borderRadius:
+                    BorderRadius.circular(8.0), // Adjust the border radius here
                 child: Image.network(
                   imageUrl,
                   width: 55,
@@ -131,7 +139,8 @@ class _DiaryCardState extends State<DiaryCard> {
         child: imageUrl == "404"
             ? Container()
             : ClipRRect(
-                borderRadius: BorderRadius.circular(8.0), // Adjust the border radius here
+                borderRadius:
+                    BorderRadius.circular(8.0), // Adjust the border radius here
                 child: Image.network(
                   imageUrl,
                   width: 55,
@@ -144,9 +153,11 @@ class _DiaryCardState extends State<DiaryCard> {
 
   @override
   Widget build(BuildContext context) {
-     final searchController = Provider.of<SearchControllerProvider>(context).searchController;
+    final searchController =
+        Provider.of<SearchControllerProvider>(context).searchController;
     final formattedDate = formatDate(widget.date);
-    final document = Document.fromDelta(Delta.fromJson(jsonDecode(widget.entry)));
+    final document =
+        Document.fromDelta(Delta.fromJson(jsonDecode(widget.entry)));
     final plainText = document.toPlainText();
     bool isHighlighted = widget.highlightedId.value == widget.id;
 
@@ -154,7 +165,8 @@ class _DiaryCardState extends State<DiaryCard> {
       onTap: () {
         widget.highlightedId.value = widget.id;
         if (isDesktop(context)) {
-          widget.onTap(context, widget.title, widget.entry, widget.date, widget.id, widget.imageUrls);
+          widget.onTap(context, widget.title, widget.entry, widget.date,
+              widget.id, widget.imageUrls);
         } else {
           Navigator.push(
             context,
@@ -182,9 +194,20 @@ class _DiaryCardState extends State<DiaryCard> {
                 clipBehavior: Clip.none,
                 children: [
                   Card(
-                    color: isHighlighted
-                        ? Theme.of(context).cardColor.withOpacity(0.5)
-                        : Theme.of(context).cardColor,
+                    color: isDesktop(context)
+                        ? isHighlighted
+                            ? AdaptiveTheme.of(context)
+                                .theme
+                                .cardColor
+                                .withOpacity(0.5)
+                            : AdaptiveTheme.of(context)
+                                .theme
+                                .highlightColor
+                                .withOpacity(0.13)
+                        : AdaptiveTheme.of(context)
+                            .theme
+                            .highlightColor
+                            .withOpacity(0.08),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8.0),
                     ),
@@ -202,10 +225,16 @@ class _DiaryCardState extends State<DiaryCard> {
                             caseSensitive: false,
                             detectWords: true,
                             highlightStyle: GoogleFonts.silkscreen(
-                              color: Theme.of(context).indicatorColor.withGreen(144),
+                              color: AdaptiveTheme.of(context)
+                                  .theme
+                                  .indicatorColor
+                                  .withGreen(144),
                             ),
                             style: GoogleFonts.silkscreen(
-                              color: Theme.of(context).colorScheme.inverseSurface,
+                              color: AdaptiveTheme.of(context)
+                                  .theme
+                                  .colorScheme
+                                  .inverseSurface,
                             ),
                           ),
                         ),
@@ -214,6 +243,12 @@ class _DiaryCardState extends State<DiaryCard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               HighlightText(
+                                style: TextStyle(
+                                  color: AdaptiveTheme.of(context)
+                                      .theme
+                                      .colorScheme
+                                      .onSurface,
+                                ),
                                 plainText.length > 144
                                     ? '${plainText.substring(0, 89)} ... '
                                     : plainText,
@@ -225,7 +260,10 @@ class _DiaryCardState extends State<DiaryCard> {
                                 caseSensitive: false,
                                 detectWords: true,
                                 highlightStyle: GoogleFonts.silkscreen(
-                                  color: Theme.of(context).indicatorColor.withGreen(144),
+                                  color: AdaptiveTheme.of(context)
+                                      .theme
+                                      .indicatorColor
+                                      .withGreen(144),
                                 ),
                               ),
                               Text(
@@ -272,6 +310,7 @@ String formatDate(String date) {
       daySuffix = 'th';
   }
 
-  String formattedDate = '${dateTime.day}$daySuffix ${DateFormat.MMMM().format(dateTime)}';
+  String formattedDate =
+      '${dateTime.day}$daySuffix ${DateFormat.MMMM().format(dateTime)}';
   return formattedDate;
 }

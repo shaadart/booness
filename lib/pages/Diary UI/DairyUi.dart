@@ -1,10 +1,10 @@
 import 'dart:collection';
 import 'dart:convert';
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:booness/services/realtime_database.dart';
 import 'package:confetti/confetti.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,7 +21,9 @@ import 'DiaryCard.dart';
 //TextEditingController searchController = TextEditingController();
 
 class DiaryUI extends StatefulWidget {
-  const DiaryUI({super.key});
+  final ScrollController scrollController; // Add this
+  const DiaryUI(
+      {super.key, required this.scrollController}); // Modify constructor
 
   @override
   _DiaryUIState createState() => _DiaryUIState();
@@ -107,7 +109,6 @@ class _DiaryUIState extends State<DiaryUI> {
       List<dynamic> decryptedList = value.map((entry) {
         String decryptedTitle = EncryptionService.decryptText(entry['title']);
         String decryptedEntry = EncryptionService.decryptText(entry['entry']);
-
         return {
           'title': decryptedTitle,
           'entry': decryptedEntry,
@@ -161,6 +162,7 @@ class _DiaryUIState extends State<DiaryUI> {
     searchController.addListener(_onSearchChanged);
     return OrientationBuilder(
       builder: (context, orientation) {
+        
         return ListView(children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,6 +225,7 @@ class _DiaryUIState extends State<DiaryUI> {
                       }
 
                       return CustomScrollView(
+                        controller: widget.scrollController,
                         slivers: [
                           const SliverToBoxAdapter(
                             child: Stats(),
@@ -251,10 +254,13 @@ class _DiaryUIState extends State<DiaryUI> {
                                             MainAxisAlignment.start,
                                         children: [
                                           Text(
-                                            formattedMonthYear.substring(0,
-                                                formattedMonthYear.length - 4),
+                                            " " +
+                                                formattedMonthYear.substring(
+                                                    0,
+                                                    formattedMonthYear.length -
+                                                        4),
                                             style: GoogleFonts.silkscreen(
-                                              fontSize: 26,
+                                              fontSize: 21,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -345,7 +351,9 @@ class _DiaryUIState extends State<DiaryUI> {
                                 height:
                                     MediaQuery.of(context).size.height * 0.9,
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context)
+                                  color: AdaptiveTheme.of(context)
+                                     
+                                      .theme
                                       .cardColor
                                       .withOpacity(0.5), // Background color
                                   borderRadius: BorderRadius.circular(
@@ -372,7 +380,8 @@ class _DiaryUIState extends State<DiaryUI> {
                                       : [], // Handle null or incorrectly typed images
                                 ))
                             : Card(
-                                color: Theme.of(context)
+                                color: AdaptiveTheme.of(context)
+                                    .theme
                                     .shadowColor
                                     .withOpacity(0.5),
                                 child: SizedBox(
