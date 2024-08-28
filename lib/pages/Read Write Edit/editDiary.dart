@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image/image.dart' as img;
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
@@ -318,72 +319,72 @@ class _EditDiaryState extends State<EditDiary> {
             },
           ),
           actions: [
-         IconButton(
-  icon: isLoading
-      ? const CircularProgressIndicator()
-      : const Icon(PhosphorIcons.check),
-  onPressed: () async {
-    if (isLoading) return;
+            IconButton(
+              icon: isLoading
+                  ? const CircularProgressIndicator()
+                  : const Icon(PhosphorIcons.check),
+              onPressed: () async {
+                if (isLoading) return;
 
-    setState(() {
-      isLoading = true;
-    });
+                setState(() {
+                  isLoading = true;
+                });
 
-    try {
-      firebase_storage.Reference storageRef =
-          firebase_storage.FirebaseStorage.instance.ref('/$uid/${widget.id}');
-      List<String> imageUrls = [];
+                try {
+                  firebase_storage.Reference storageRef = firebase_storage
+                      .FirebaseStorage.instance
+                      .ref('/$uid/${widget.id}');
+                  List<String> imageUrls = [];
 
-      // Upload new images and get their URLs
-      for (var image in _imagesFile) {
-        firebase_storage.UploadTask task =
-            storageRef.child(image.path).putFile(image);
-        final snapshot = await task.whenComplete(() {});
-        String downloadUrl = await snapshot.ref.getDownloadURL();
-        imageUrls.add(downloadUrl);
-      }
+                  // Upload new images and get their URLs
+                  for (var image in _imagesFile) {
+                    firebase_storage.UploadTask task =
+                        storageRef.child(image.path).putFile(image);
+                    final snapshot = await task.whenComplete(() {});
+                    String downloadUrl = await snapshot.ref.getDownloadURL();
+                    imageUrls.add(downloadUrl);
+                  }
 
-      imageUrls.addAll(_imagesNetwork);
+                  imageUrls.addAll(_imagesNetwork);
 
-      // Update Firebase Realtime Database
-      await ref.child(widgetId).update({
-        'id': widgetId,
-        'date': userEditPageDate.toString(),
-        'images': imageUrls,
-      });
+                  // Update Firebase Realtime Database
+                  await ref.child(widgetId).update({
+                    'id': widgetId,
+                    'date': userEditPageDate.toString(),
+                    'images': imageUrls,
+                  });
 
-      setState(() {
-        _imagesNetwork = imageUrls; // Update the _imagesNetwork list with new URLs
-        _imagesFile.clear(); // Clear the _imagesFile list after upload
-        isLoading = false;
-        Navigator.pushReplacement(
-          context,
-          PageTransition(
-            curve: Curves.fastEaseInToSlowEaseOut,
-            duration: const Duration(milliseconds: 300),
-            type: PageTransitionType.topToBottom,
-            child: const HomeScreen(title: ''),
-          ),
-        );
-      });
+                  setState(() {
+                    _imagesNetwork =
+                        imageUrls; // Update the _imagesNetwork list with new URLs
+                    _imagesFile
+                        .clear(); // Clear the _imagesFile list after upload
+                    isLoading = false;
+                    Navigator.pushReplacement(
+                      context,
+                      PageTransition(
+                        curve: Curves.fastEaseInToSlowEaseOut,
+                        duration: const Duration(milliseconds: 300),
+                        type: PageTransitionType.topToBottom,
+                        child: const HomeScreen(title: ''),
+                      ),
+                    );
+                  });
 
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Diary updated')),
-      );
-
-    } catch (e) {
-      print('Error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update diary: $e')),
-      );
-      setState(() {
-        isLoading = false;
-      });
-    }
-  },
-)
-
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Diary updated')),
+                  );
+                } catch (e) {
+                  print('Error: $e');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to update diary: $e')),
+                  );
+                  setState(() {
+                    isLoading = false;
+                  });
+                }
+              },
+            )
           ],
           title: Opacity(
             opacity: 0.89,
@@ -473,7 +474,7 @@ class _EditDiaryState extends State<EditDiary> {
 
   Widget _buildReorderableImageCard({File? file, String? url}) {
     return Card(
-      color: Theme.of(context).cardColor,
+      color: AdaptiveTheme.of(context).theme.cardColor,
       key: ValueKey(file?.path ?? url),
       margin: const EdgeInsets.only(right: 10),
       child: Stack(

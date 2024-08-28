@@ -1,3 +1,4 @@
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
@@ -114,7 +115,10 @@ class _YourLivesState extends State<YourLives> {
 
           return Center(
             child: Card(
-              color: Theme.of(context).colorScheme.inversePrimary.withGreen(55),
+              // color: Theme.of(context).colorScheme.inversePrimary.withGreen(55),
+            color: AdaptiveTheme.of(context).mode.isDark
+                ? Theme.of(context).colorScheme.primary.withGreen(5)
+                : Theme.of(context).colorScheme.primary.withGreen(89),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16.0),
               ),
