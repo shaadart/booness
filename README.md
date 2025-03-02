@@ -1,16 +1,7 @@
 # booness
 
-A new Flutter project.
+![image](https://github.com/user-attachments/assets/11345e4c-73df-48e0-9bab-2b033187abc1)
 
-## Getting Started
+![image](https://github.com/user-attachments/assets/5ca1dc21-6c61-4ed1-bf28-9123d3219758)
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+![image](https://github.com/user-attachments/assets/e4837045-fd23-4973-922e-2b74f7c15846)
