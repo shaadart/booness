@@ -7,6 +7,7 @@ import 'package:booness/services/themes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_phosphor_icons/flutter_phosphor_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';
@@ -36,7 +37,7 @@ Future<void> main() async {
         ledColor: Colors.white,
       ),
     ],
-    debug: false,
+  
   );
 
   currentUser == null ? print("uid is null") : checkAndRenewLives();
@@ -92,6 +93,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+    ScrollController _scrollController = ScrollController();
+  bool _isAppBarVisible = true;
+  bool _isFabVisible = true;
   @override
   void initState() {
     AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
@@ -99,8 +103,32 @@ class _HomeScreenState extends State<HomeScreen> {
         AwesomeNotifications().requestPermissionToSendNotifications();
       }
     });
-
+    // Add listener to scroll controller
+    _scrollController.addListener(_handleScroll);
     super.initState();
+  }
+void _handleScroll() {
+    if (_scrollController.position.userScrollDirection == ScrollDirection.reverse) {
+      if (_isAppBarVisible || _isFabVisible) {
+        setState(() {
+          _isAppBarVisible = false;
+          _isFabVisible = false;
+        });
+      }
+    } else if (_scrollController.position.userScrollDirection == ScrollDirection.forward) {
+      if (!_isAppBarVisible || !_isFabVisible) {
+        setState(() {
+          _isAppBarVisible = true;
+          _isFabVisible = true;
+        });
+      }
+    }
+  }
+    @override
+  void dispose() {
+       _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -108,9 +136,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final searchController =
         Provider.of<SearchControllerProvider>(context).searchController;
     return Scaffold(
-      appBar: AppBarWithSearchSwitch(
-        titleTextStyle: GoogleFonts.silkscreen(fontSize: 21),
-        customTextEditingController: searchController,
+      appBar: _isAppBarVisible
+          ? AppBarWithSearchSwitch(
+              titleTextStyle: GoogleFonts.silkscreen(fontSize: 21),
+              customTextEditingController: searchController,
         toolbarTextStyle: GoogleFonts.silkscreen(
           fontWeight: FontWeight.bold,
         ),
@@ -188,27 +217,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 "Booness",
                 style: GoogleFonts.silkscreen(
                   fontWeight: FontWeight.bold,
+                  color: AdaptiveTheme.of(context).theme.colorScheme.primary,
                 ),
               ),
             ),
             centerTitle: true,
           );
         },
-      ),
-      body: const DiaryUI(),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(PhosphorIcons.plus),
-        onPressed: () {
-          Navigator.push(
-              context,
-              PageTransition(
-                curve: Curves.fastEaseInToSlowEaseOut,
-                duration: const Duration(milliseconds: 200),
-                type: PageTransitionType.bottomToTop,
-                child: const WriteDiary(),
-              ));
-        },
-      ),
+      ): null,
+         body: DiaryUI(scrollController: _scrollController),
+      floatingActionButton: _isFabVisible
+          ? FloatingActionButton.large(
+              child: const Icon(PhosphorIcons.plus),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  PageTransition(
+                    curve: Curves.fastEaseInToSlowEaseOut,
+                    duration: const Duration(milliseconds: 200),
+                    type: PageTransitionType.bottomToTop,
+                    child: const WriteDiary(),
+                  ),
+                );
+              },
+            )
+          : null,
     );
   }
 }

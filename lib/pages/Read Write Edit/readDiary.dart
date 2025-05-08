@@ -139,6 +139,7 @@ class _ReadDiaryState extends State<ReadDiary> {
     );
   }
 }
+
 Widget buildReadingWidget(
   BuildContext context,
   FocusNode focusNode,
@@ -208,7 +209,12 @@ Widget buildReadingWidget(
                 margin: const EdgeInsets.only(right: 10),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10.0),
-                  child: Image.network(url),
+                  child: Image.network(
+                    url,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(); // Fallback widget
+                    },
+                  ),
                 ),
               ),
             );
@@ -335,26 +341,34 @@ Widget buildReadingWidget(
     ),
   );
 }
+void _deleteEntry(BuildContext context, String id, List<String> images) async {
+  // Reference to the Firebase Realtime Database
+  DatabaseReference ref = FirebaseDatabase.instance
+      .ref()
+      .child('USERS')
+      .child(uid!)
+      .child('Post')
+      .child(id);
 
-void _deleteEntry(BuildContext context, String entryId, List<String> images) {
-  DatabaseReference databaseReference =
-      FirebaseDatabase.instance.ref().child('entries/$entryId');
-  databaseReference.remove().then((_) {
+  try {
+    // Deleting associated images from Firebase Storage
     if (images.isNotEmpty && images[0] != "404") {
-      for (String image in images) {
-        FirebaseStorage.instance.refFromURL(image).delete().then((_) {
-          print('Image deleted successfully.');
-        }).catchError((error) {
-          print('Failed to delete image: $error');
-        });
+      for (String imageUrl in images) {
+        final ref = FirebaseStorage.instance.refFromURL(imageUrl);
+        await ref.delete();
       }
     }
+    // Deleting the entry from the database
+    await ref.remove();
+    
+    // Show success snackbar
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Entry deleted successfully')),
+      SnackBar(content: Text("Entry deleted successfully")),
     );
-  }).catchError((error) {
+  } catch (e) {
+    // Show error snackbar if deletion fails
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to delete entry: $error')),
+      SnackBar(content: Text("Failed to delete entry: $e")),
     );
-  });
+  }
 }

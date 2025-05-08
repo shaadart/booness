@@ -1,3 +1,4 @@
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:booness/services/streak_services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -66,7 +67,8 @@ class _StreaksState extends State<Streaks> {
                             TextSpan(
                               text: hundreds,
                               style: GoogleFonts.silkscreen(
-                                color: Theme.of(context)
+                                color: AdaptiveTheme.of(context)
+                                    .theme
                                     .colorScheme
                                     .onPrimaryFixedVariant
                                     .withOpacity(hundreds == '0' ? 0.5 : 0.8),
@@ -75,7 +77,8 @@ class _StreaksState extends State<Streaks> {
                             TextSpan(
                               text: tens,
                               style: GoogleFonts.silkscreen(
-                                color: Theme.of(context)
+                                color: AdaptiveTheme.of(context)
+                                    .theme
                                     .colorScheme
                                     .onPrimaryFixedVariant
                                     .withOpacity(tens == '0' ? 0.5 : 0.8),
@@ -84,7 +87,8 @@ class _StreaksState extends State<Streaks> {
                             TextSpan(
                               text: units,
                               style: GoogleFonts.silkscreen(
-                                color: Theme.of(context)
+                                color: AdaptiveTheme.of(context)
+                                    .theme
                                     .colorScheme
                                     .onPrimaryFixedVariant
                                     .withOpacity(0.8),
@@ -103,7 +107,8 @@ class _StreaksState extends State<Streaks> {
                         child: Text(
                           "Days",
                           style: GoogleFonts.silkscreen(
-                            color: Theme.of(context)
+                            color: AdaptiveTheme.of(context)
+                                .theme
                                 .colorScheme
                                 .onPrimaryFixedVariant,
                           ),
